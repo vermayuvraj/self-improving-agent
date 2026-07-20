@@ -25,6 +25,8 @@ def collect() -> list[dict[str, object]]:
             continue
         totals = manifest.get("totals", {})
         config = manifest.get("config", {})
+        if config.get("limit") is not None:
+            continue  # smoke/subset runs are pipeline checks, never results
         pass1 = totals.get("pass@1")
         tasks = totals.get("tasks")
         if pass1 is None or not tasks:

@@ -59,4 +59,7 @@ latency — we record `ollama ps` VRAM split alongside results. (c) Known
 contamination risk on HumanEval/MBPP for both models — scores are used for
 relative comparison, not as absolute capability claims.
 
-**Status.** Pre-registered; blocked on model downloads.
+**Status.** Smoke run passed 2026-07-20 (run `c120ff7c58cc`: 10/10 HumanEval
+tasks, ~18 s/task, 0 LLM errors — pipeline validated, results discarded per
+protocol). Full runs launched 2026-07-20: both models × both benchmarks,
+sequential, ~6 h estimated wall time.
