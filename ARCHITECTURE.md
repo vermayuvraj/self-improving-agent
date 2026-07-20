@@ -73,3 +73,18 @@ No capability module is merged without an experiment entry showing its effect
 on at least one benchmark at matched budget. "Matched budget" means equal
 token/cost ceilings, not equal iteration counts — otherwise added machinery
 smuggles in extra compute and the comparison is void.
+
+### ADR-0006: Local-first inference via Ollama (decided 2026-07-20)
+All experiments run against local models served by Ollama through its
+OpenAI-compatible endpoint (so the ADR-0002 adapter covers it with zero extra
+code). Candidates: `qwen3:8b`, `qwen2.5-coder:7b` (Q4_K_M, ~5 GB each) —
+final choice via EXP-001. Consequences we accept and design around:
+- **~8K context ceiling** on 6 GB VRAM → prompt frugality is a first-class
+  design constraint (short tool outputs, aggressive truncation policies —
+  themselves an ablation axis).
+- **Lower absolute scores** than frontier models → more headroom, larger
+  capability effect sizes; RQ8 (transfer to frontier models) becomes the
+  bridge claim, testable later via any OpenAI-compatible cloud key.
+- **Zero marginal cost** → we can afford many seeds and dense ablation grids,
+  which is precisely our differentiator. Latency, not dollars, becomes the
+  budget currency (we still report token counts for comparability).

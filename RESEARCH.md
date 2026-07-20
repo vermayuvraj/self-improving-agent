@@ -39,6 +39,12 @@ evolution) is an independent toggle evaluated under **matched token/cost
 budgets** on a **single-workstation compute envelope** — a reproducibility
 story most labs' setups cannot offer and most practitioners actually need.
 
+We deliberately run in the **small-model regime** (7–8B local models,
+ADR-0006): function-level benchmarks are unsaturated there, capability
+ablations produce measurable effect sizes, anyone can reproduce our results
+for free, and the "does it transfer to frontier models?" question (RQ8)
+becomes a contribution rather than a threat to validity.
+
 ## Research questions
 
 | ID | Question | Milestone |
