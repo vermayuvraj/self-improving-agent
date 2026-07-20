@@ -52,7 +52,9 @@ def analyze(run_id: str) -> dict[str, object]:
             verdicts[(data["task_id"], data["sample"])] = data
 
     failures = [v for v in verdicts.values() if not v["passed"]]
-    counts = Counter(classify(v.get("stderr_tail", ""), v.get("timed_out", False)) for v in failures)
+    counts = Counter(
+        classify(v.get("stderr_tail", ""), v.get("timed_out", False)) for v in failures
+    )
     return {
         "run_id": run_id,
         "bench": manifest["config"]["bench"],
@@ -73,7 +75,10 @@ def main() -> None:
     for run_id in run_ids:
         report = analyze(run_id)
         print(f"\n=== {report['run_id']}  {report['bench']}  {report['model']} ===")
-        print(f"tasks={report['tasks']}  pass@1={report['pass@1']:.3f}  failures={report['failures']}")
+        print(
+            f"tasks={report['tasks']}  pass@1={report['pass@1']:.3f}  "
+            f"failures={report['failures']}"
+        )
         for label, n in report["taxonomy"].items():
             share = n / report["failures"] * 100 if report["failures"] else 0
             print(f"  {label:<22} {n:>4}  ({share:.0f}% of failures)")
