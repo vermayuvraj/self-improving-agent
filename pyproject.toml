@@ -1,0 +1,40 @@
+[project]
+name = "sia"
+version = "0.1.0"
+description = "SIA: research platform for self-improving autonomous software engineering agents"
+readme = "README.md"
+authors = [
+    { name = "Yuvraj Verma", email = "yuvrajverma2939@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+]
+
+[project.scripts]
+sia = "sia.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.25,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
