@@ -30,7 +30,7 @@ the model is nondeterministic.
 
 | ID | Date | RQ | Hypothesis (short) | Benchmark | Result | Status |
 |----|------|----|--------------------|-----------|--------|--------|
-| EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | — | pre-registered |
+| EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | arm 1: 85.4% / 74.8% pass@1 | arm 2 pending |
 
 ## EXP-001 — Default model selection (pre-registered before run)
 
@@ -59,7 +59,58 @@ latency — we record `ollama ps` VRAM split alongside results. (c) Known
 contamination risk on HumanEval/MBPP for both models — scores are used for
 relative comparison, not as absolute capability claims.
 
-**Status.** Smoke run passed 2026-07-20 (run `c120ff7c58cc`: 10/10 HumanEval
-tasks, ~18 s/task, 0 LLM errors — pipeline validated, results discarded per
-protocol). Full runs launched 2026-07-20: both models × both benchmarks,
-sequential, ~6 h estimated wall time.
+**Status.** Arm 1 complete (qwen2.5-coder:7b); arm 2 (qwen3:8b) pending
+download. Smoke run `c120ff7c58cc` validated the pipeline (10/10, discarded
+per protocol).
+
+### Results — arm 1: qwen2.5-coder:7b (2026-07-20)
+
+| Benchmark | Tasks | pass@1 | 95% CI (Wilson) | Wall | s/task | LLM errors | Run |
+|---|---|---|---|---|---|---|---|
+| HumanEval | 164 | **0.854** | [0.791, 0.900] | 878 s | 5.4 | 0 | `090a8adcdc48` |
+| MBPP (test) | 500 | **0.748** | [0.708, 0.784] | 1543 s | 3.1 | 0 | `b2e16d243112` |
+
+Tokens: 34.3k in / 16.4k out (HumanEval), 91.9k in / 29.4k out (MBPP).
+VRAM split throughout: **18% CPU / 82% GPU**, 4096-token context — the model
+does not fit entirely in 6 GB, so a slice is CPU-offloaded (see Threats (b);
+this is the measured cause of GPU utilisation sitting near 50% rather than
+saturating).
+
+Both figures sit in the range published for this model, which is the
+harness's external sanity check: our assembly + sandbox path is not
+silently deflating scores.
+
+### Failure analysis — arm 1
+
+Classified with `scripts/analyze_failures.py` (M2 taxonomy prototype):
+
+| Class | HumanEval (24 fails) | MBPP (126 fails) |
+|---|---|---|
+| wrong_answer (assertion) | 22 (92%) | 118 (94%) |
+| type_error | 1 | 3 |
+| lookup_error | 1 | 1 |
+| name_error | — | 2 |
+| timeout | — | 2 |
+| **syntax_error** | **0** | **0** |
+
+**Finding (harness validity).** Zero syntax or indentation errors across 664
+generated programs. The extraction → assembly → execution path is not a
+source of measurement error, which is exactly the failure mode the
+[MEMORY/lessons.md] indentation bug would have caused. Zero LLM errors, zero
+malformed responses.
+
+**Finding (motivates M3).** ~93% of failures are *semantic*: the program runs
+and returns a wrong value. Three hand-inspected cases (`HumanEval/10`
+`make_palindrome`, `HumanEval/26` `remove_duplicates`, `mbpp/14`
+`find_Volume`) all produce clean `AssertionError` tracebacks naming the
+failing input and the expected output. This is the ideal regime for the M3
+repair loop — the execution feedback is informative and localised, not a
+stack trace about broken syntax. It also sharpens **RQ1**: if repair helps
+anywhere, it should help here, so a *null* result on this distribution would
+be a strong negative finding rather than a setup artifact.
+
+**Future work.** (a) The 18%/82% CPU/GPU spill is the latency bottleneck;
+test whether flash attention + quantised KV cache fits the model entirely in
+6 GB, as a controlled infrastructure experiment *after* EXP-001 closes (never
+mid-comparison). (b) MBPP's 2 timeouts warrant checking whether 10 s is
+generous enough for legitimately slow-but-correct solutions.

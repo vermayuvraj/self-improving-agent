@@ -6,13 +6,13 @@ window.SIA_DATA = {
   repo: "https://github.com/vermayuvraj/self-improving-agent",
   status: {
     milestone: "M1",
-    phase: "Baseline agent + eval harness built; EXP-001 (model selection) queued behind model downloads",
+    phase: "EXP-001 arm 1 complete — qwen2.5-coder:7b at 85.4% HumanEval / 74.8% MBPP; arm 2 running",
   },
   stats: [
-    { label: "Milestones complete", value: "1 / 10", note: "M0 done, M1 in progress" },
-    { label: "Tests passing", value: "31", note: "30 offline + 1 network self-check" },
+    { label: "HumanEval pass@1", value: "85.4%", note: "qwen2.5-coder:7b, 164 tasks, greedy" },
+    { label: "MBPP pass@1", value: "74.8%", note: "qwen2.5-coder:7b, 500 tasks, greedy" },
+    { label: "Tests passing", value: "34", note: "33 offline + 1 network self-check" },
     { label: "Research questions", value: "8", note: "RQ1–RQ8, each tied to a milestone" },
-    { label: "Benchmarks wired", value: "2", note: "HumanEval · MBPP (SWE-bench at M4)" },
   ],
   roadmap: [
     { id: "M0", title: "Foundation", status: "done", detail: "Repo, management docs, literature grounding, ADR-0001–0006." },
@@ -45,7 +45,7 @@ window.SIA_DATA = {
       benchmarks: "HumanEval (164) + MBPP test (500)",
       hypothesis: "The code-specialized qwen2.5-coder:7b matches or beats the newer general-purpose qwen3:8b on function-level code generation, at lower latency.",
       method: "Single-shot agent, greedy decoding (T=0, seed 7), max 2048 tokens, 10s exec timeout. Decision rule fixed in advance: higher mean pass@1 across both benchmarks wins; CI-overlapping tie goes to lower latency.",
-      result: null,
+      result: "Arm 1 (qwen2.5-coder:7b): 85.4% HumanEval [79.1–90.0], 74.8% MBPP [70.8–78.4], 0 LLM errors. Failure analysis: ~93% semantic wrong-answer, 0 syntax errors across 664 programs — the harness is not deflating scores, and the failure signal is well suited to the M3 repair loop. Arm 2 (qwen3:8b) in progress.",
     },
   ],
 };

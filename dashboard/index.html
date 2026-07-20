@@ -390,6 +390,7 @@
       <div class="exp-grid">
         <div class="exp-field"><div class="k">Hypothesis</div><div class="v">${esc(e.hypothesis)}</div></div>
         <div class="exp-field"><div class="k">Method &amp; decision rule</div><div class="v">${esc(e.method)}</div></div>
+        ${e.result ? `<div class="exp-field"><div class="k">Result</div><div class="v">${esc(e.result)}</div></div>` : ""}
       </div>
     </div>`).join("");
 
