@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# Env / secrets
+.env
+*.key
+
+# Run artifacts (traces are data, not source; archived selectively)
+runs/
+experiments/**/traces/
+*.jsonl.tmp
+
+# Datasets (downloaded/cached, never committed)
+data/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
