@@ -109,6 +109,43 @@ stack trace about broken syntax. It also sharpens **RQ1**: if repair helps
 anywhere, it should help here, so a *null* result on this distribution would
 be a strong negative finding rather than a setup artifact.
 
+### Protocol deviation — qwen3:8b MBPP arm dropped (2026-07-20)
+
+Measured after 12 HumanEval tasks, qwen3:8b runs at **96.4 s/task vs
+qwen2.5-coder:7b's 5.4 s/task — an 18× gap**. Two compounding causes, both
+measured rather than inferred:
+
+- **Thinking tokens:** 1392 mean completion tokens/task vs 100 (14×). qwen3
+  emits a reasoning trace before answering.
+- **VRAM ceiling:** qwen3 loads at 30% CPU / 70% GPU vs 18%/82% (6.0 GB vs
+  5.1 GB resident against a 6 GB card), so a larger share runs on CPU. This
+  is pre-registered Threat (b), now confirmed with numbers.
+
+Completing both arms as specified would take **~17.5 h** (4 h HumanEval +
+13.5 h MBPP). **Decision: run the HumanEval arm to completion, drop the
+qwen3 MBPP arm.** Rationale: HumanEval alone gives a full head-to-head on
+matched tasks, which is what the accuracy comparison needs; a second
+benchmark at 13.5 h buys precision we do not need to pick a *development*
+default, and would monopolise the only GPU for a day.
+
+This is a deviation from the pre-registration and is recorded as such rather
+than quietly rewriting the plan. It affects the decision rule: with only one
+benchmark for arm 2, "higher mean pass@1 across both benchmarks" cannot be
+evaluated as written. **Amended rule (fixed now, before the HumanEval arm
+finishes):** if the two models' HumanEval CIs overlap, the 18× latency gap
+decides it for qwen2.5-coder. If qwen3 wins HumanEval with
+*non-overlapping* CIs, that is a genuine accuracy/throughput trade-off — the
+coder model still becomes the default for ablation grids (an 18× tax on
+every future experiment is disqualifying for a platform whose thesis is
+dense, matched-budget ablations on one workstation), and qwen3 gets recorded
+as a candidate for final high-stakes evaluation runs, to be settled by its
+own experiment.
+
+**Spun off as EXP-002 (not yet run):** qwen3:8b with thinking disabled vs
+qwen2.5-coder:7b, matched budget. Thinking-mode cost is a confound worth
+isolating, and it is a real RQ8-adjacent question — does test-time reasoning
+pay for itself on function-level code tasks under a fixed latency budget?
+
 **Future work.** (a) The 18%/82% CPU/GPU spill is the latency bottleneck;
 test whether flash attention + quantised KV cache fits the model entirely in
 6 GB, as a controlled infrastructure experiment *after* EXP-001 closes (never
