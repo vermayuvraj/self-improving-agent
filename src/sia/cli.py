@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from sia.llm import OpenAICompatClient
+from sia.llm import LLMError, OpenAICompatClient
 from sia.llm.openai_compat import OLLAMA_BASE_URL
 from sia.runner import run_benchmark
 
@@ -37,6 +37,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     llm = OpenAICompatClient(args.model, base_url=args.base_url, api_key=args.api_key)
+    try:
+        llm.check_available()
+    except LLMError as exc:
+        llm.close()
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     try:
         summary = run_benchmark(
             args.bench,

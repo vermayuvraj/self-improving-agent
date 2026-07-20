@@ -40,6 +40,26 @@ class OpenAICompatClient:
             transport=transport,
         )
 
+    def check_available(self) -> None:
+        """Fail fast if the endpoint does not serve ``self.model``.
+
+        A benchmark run against a missing model would otherwise record one
+        error per task and still emit a manifest — a 0% score that looks like
+        a result. Runs must never produce scored artifacts from a broken
+        configuration.
+        """
+        try:
+            response = self._client.get("/models")
+            response.raise_for_status()
+            served = {m.get("id") for m in response.json().get("data", [])}
+        except (httpx.HTTPError, ValueError, AttributeError) as exc:
+            raise LLMError(f"cannot reach model endpoint: {exc}") from exc
+        if self.model not in served:
+            raise LLMError(
+                f"model {self.model!r} is not available at the endpoint. "
+                f"Served models: {sorted(served) or '(none)'}"
+            )
+
     def complete(
         self,
         messages: list[Message],
