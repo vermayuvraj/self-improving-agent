@@ -30,4 +30,33 @@ the model is nondeterministic.
 
 | ID | Date | RQ | Hypothesis (short) | Benchmark | Result | Status |
 |----|------|----|--------------------|-----------|--------|--------|
-| —  | —    | —  | (none yet — first experiments land in M1) | — | — | — |
+| EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | — | pre-registered |
+
+## EXP-001 — Default model selection (pre-registered before run)
+
+**Hypothesis.** The code-specialized `qwen2.5-coder:7b` matches or beats the
+newer general-purpose `qwen3:8b` on function-level code generation, at lower
+latency (smaller model, no thinking tokens).
+
+**Method.** Single-shot agent (one call per task), greedy decoding
+(temperature 0.0, seed 7), max_tokens 2048, exec timeout 10 s. Full
+HumanEval (164) and MBPP test split (500) per model. Smoke run
+(`--limit 10`) first to validate the pipeline; smoke results are discarded,
+not pooled.
+
+**Decision rule (fixed in advance).** Default model = higher mean pass@1
+averaged over the two benchmarks. If the difference is within overlapping
+95% Wilson CIs on both benchmarks, prefer the model with lower median
+per-task latency. Loser stays available for RQ8 transfer checks.
+
+**Metrics.** pass@1 per benchmark (95% CI), tokens in/out, per-task LLM
+latency, wall time, extraction-fallback rate (from traces).
+
+**Threats.** (a) Greedy decoding may under-represent qwen3 if it relies on
+sampling diversity — accepted: our platform default is deterministic runs.
+(b) 6 GB VRAM may force partial CPU offload for the 8B model, inflating its
+latency — we record `ollama ps` VRAM split alongside results. (c) Known
+contamination risk on HumanEval/MBPP for both models — scores are used for
+relative comparison, not as absolute capability claims.
+
+**Status.** Pre-registered; blocked on model downloads.
