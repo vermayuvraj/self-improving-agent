@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ from sia.agent import solve_single_shot
 from sia.bench import BenchTask, build_execution, load_tasks, pass_at_k, wilson_ci
 from sia.bench.base import DEFAULT_DATA_DIR
 from sia.llm import LLMClient, LLMError
+from sia.parallel import default_workers, parallel_map
 from sia.sandbox import run_python
 from sia.trace import RunManifest, TraceWriter
 from sia.trace.writer import new_run_id
@@ -43,6 +45,7 @@ def run_benchmark(
     runs_dir: Path = Path("runs"),
     data_dir: Path = DEFAULT_DATA_DIR,
     tasks: list[BenchTask] | None = None,
+    workers: int | None = None,
     progress: Callable[[str], None] | None = None,
 ) -> RunSummary:
     """Run one agent configuration over a benchmark, emitting trace + manifest + results.
@@ -58,6 +61,7 @@ def run_benchmark(
     run_id = new_run_id()
     run_dir = runs_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    n_workers = workers if workers is not None else default_workers()
     config = {
         "bench": bench,
         "model": llm.model,
@@ -81,12 +85,14 @@ def run_benchmark(
         "exec_ms": 0.0,
     }
     rows: list[dict[str, object]] = []
+    totals_lock = threading.Lock()
     started = time.perf_counter()
 
     with TraceWriter(run_dir / "trace.jsonl", run_id) as trace:
-        for index, task in enumerate(tasks):
+
+        def run_task(task: BenchTask) -> list[dict[str, object]]:
             trace.event("task_start", task_id=task.task_id)
-            passed_count = 0
+            task_rows: list[dict[str, object]] = []
             for sample in range(samples):
                 sample_seed = None if seed is None else seed + sample
                 row: dict[str, object] = {"task_id": task.task_id, "sample": sample}
@@ -101,21 +107,22 @@ def run_benchmark(
                         seed=sample_seed,
                     )
                 except LLMError as exc:
-                    totals["llm_errors"] += 1
+                    with totals_lock:
+                        totals["llm_errors"] += 1
                     trace.event("error", task_id=task.task_id, sample=sample, error=str(exc))
                     row.update(passed=False, error=str(exc))
-                    rows.append(row)
+                    task_rows.append(row)
                     continue
-                totals["llm_calls"] += 1
-                totals["prompt_tokens"] += response.prompt_tokens
-                totals["completion_tokens"] += response.completion_tokens
-                totals["llm_latency_ms"] += response.latency_ms
 
                 program, aux = build_execution(task, response.content)
                 result = run_python(program, timeout_s=exec_timeout_s, files=aux)
-                totals["exec_ms"] += result.duration_ms
                 passed = result.ok
-                passed_count += passed
+                with totals_lock:
+                    totals["llm_calls"] += 1
+                    totals["prompt_tokens"] += response.prompt_tokens
+                    totals["completion_tokens"] += response.completion_tokens
+                    totals["llm_latency_ms"] += response.latency_ms
+                    totals["exec_ms"] += result.duration_ms
                 trace.event(
                     "verdict",
                     task_id=task.task_id,
@@ -138,13 +145,22 @@ def run_benchmark(
                     prompt_tokens=response.prompt_tokens,
                     completion_tokens=response.completion_tokens,
                 )
-                rows.append(row)
+                task_rows.append(row)
+            return task_rows
+
+        done = [0]
+
+        def report(_i: int, task: BenchTask, task_rows: list[dict[str, object]]) -> None:
+            done[0] += 1
             if progress:
-                progress(
-                    f"[{index + 1}/{len(tasks)}] {task.task_id}: {passed_count}/{samples} passed"
-                )
+                n_passed = sum(1 for r in task_rows if r.get("passed"))
+                progress(f"[{done[0]}/{len(tasks)}] {task.task_id}: {n_passed}/{samples} passed")
+
+        for task_rows in parallel_map(run_task, tasks, workers=n_workers, on_result=report):
+            rows.extend(task_rows)
 
     totals["wall_s"] = round(time.perf_counter() - started, 2)
+    totals["workers"] = n_workers
     (run_dir / "results.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )

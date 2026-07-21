@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import threading
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -64,23 +65,27 @@ class TraceWriter:
         self.path = path
         self.run_id = run_id
         self._seq = 0
+        # Runs execute tasks concurrently (sia.parallel); without this lock,
+        # interleaved writes would corrupt lines and duplicate seq numbers.
+        self._lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
         self._fh = path.open("a", encoding="utf-8")
 
     def event(self, event_type: str, **data: Any) -> int:
         if event_type not in EVENT_TYPES:
             raise ValueError(f"unknown event type: {event_type!r}")
-        record = {
-            "run_id": self.run_id,
-            "seq": self._seq,
-            "ts": _now_iso(),
-            "type": event_type,
-            "data": data,
-        }
-        self._fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
-        self._fh.flush()
-        self._seq += 1
-        return record["seq"]
+        with self._lock:
+            record = {
+                "run_id": self.run_id,
+                "seq": self._seq,
+                "ts": _now_iso(),
+                "type": event_type,
+                "data": data,
+            }
+            self._fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+            self._fh.flush()
+            self._seq += 1
+            return record["seq"]
 
     def close(self) -> None:
         self._fh.close()

@@ -41,6 +41,7 @@ def test_run_benchmark_end_to_end(tmp_path):
         tasks=tasks,
         runs_dir=tmp_path / "runs",
         seed=1,
+        workers=1,  # list-mode FakeLLM is call-order dependent
         progress=lines.append,
     )
 
@@ -85,6 +86,7 @@ def test_run_benchmark_multi_sample_pass_at_k(tmp_path):
         samples=2,
         temperature=0.8,
         runs_dir=tmp_path / "runs",
+        workers=1,
     )
     assert summary.pass_rates["pass@1"] == 0.5
     assert summary.pass_rates["pass@2"] == 1.0
@@ -94,9 +96,27 @@ def test_run_benchmark_multi_sample_pass_at_k(tmp_path):
 def test_llm_error_recorded_not_fatal(tmp_path):
     tasks = parse_humaneval(FIXTURE)
     llm = FakeLLM(["```python\ndef add(a, b):\n    return a + b\n```"])  # second call errors
-    summary = run_benchmark("humaneval", llm, tasks=tasks, runs_dir=tmp_path / "runs")
+    summary = run_benchmark("humaneval", llm, tasks=tasks, runs_dir=tmp_path / "runs", workers=1)
 
     assert summary.pass_rates["pass@1"] == 0.5
     assert summary.totals["llm_errors"] == 1
     events = read_trace(summary.run_dir / "trace.jsonl")
     assert any(e["type"] == "error" for e in events)
+
+
+def test_parallel_run_preserves_task_order_and_results(tmp_path):
+    """Concurrency must not reorder results or change pass rates."""
+    tasks = parse_humaneval(FIXTURE)
+    llm = FakeLLM(
+        {
+            "def add": "```python\ndef add(a, b):\n    return a + b\n```",
+            "def sub": "```python\ndef sub(a, b):\n    return a - b\n```",
+        }
+    )
+    summary = run_benchmark("humaneval", llm, tasks=tasks, runs_dir=tmp_path / "runs", workers=4)
+    assert summary.pass_rates == {"pass@1": 1.0}
+    rows = [
+        json.loads(line) for line in (summary.run_dir / "results.jsonl").read_text().splitlines()
+    ]
+    assert [r["task_id"] for r in rows] == ["HumanEval/0", "HumanEval/1"]
+    assert summary.totals["workers"] == 4
