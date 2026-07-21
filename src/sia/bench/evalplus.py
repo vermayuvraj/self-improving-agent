@@ -53,15 +53,13 @@ Respond with the complete Python solution in a single ```python code block. No e
 
 
 def _strip_contract(solution: str) -> str:
-    return "\n".join(
-        line for line in solution.splitlines() if CONTRACT_MARKER not in line
-    )
+    return "\n".join(line for line in solution.splitlines() if CONTRACT_MARKER not in line)
 
 
 # The oracle harness. Runs candidate and reference over every input and
 # compares. Kept in a template rather than generated ad hoc so the comparison
 # semantics (float tolerance, exception equivalence) are auditable in one place.
-_HARNESS = '''\
+_HARNESS = """\
 import json
 import math
 import os
@@ -135,7 +133,7 @@ for index, args in enumerate(INPUTS):
 
 if failures:
     raise SystemExit(f"{{failures}} failing input(s) of {{len(INPUTS)}}")
-'''
+"""
 
 
 def build_program(task: BenchTask, solution_code: str) -> tuple[str, dict[str, str]]:

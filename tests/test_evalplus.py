@@ -89,8 +89,6 @@ def test_real_evalplus_canonical_solutions_pass(bench, tmp_path):
     tasks = load_tasks(bench, data_dir=tmp_path)
     assert len(tasks) > 100
     for task in tasks[:15]:
-        program, aux = build_execution(
-            task, f"```python\n{task.canonical_solution}\n```"
-        )
+        program, aux = build_execution(task, f"```python\n{task.canonical_solution}\n```")
         result = run_python(program, timeout_s=60, files=aux)
         assert result.ok, f"{task.task_id} failed:\n{result.stdout}\n{result.stderr}"
