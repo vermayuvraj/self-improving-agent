@@ -19,7 +19,12 @@ ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = ROOT / "runs"
 
 
-def classify(stderr: str, timed_out: bool) -> str:
+def classify(stderr: str, timed_out: bool, *, budget_exhausted: bool = False) -> str:
+    """Bucket a failure. ``budget_exhausted`` takes priority over every runtime
+    signal: if the model never finished emitting code, the downstream error is
+    an artifact of truncation, not evidence about the model's reasoning."""
+    if budget_exhausted:
+        return "budget_exhausted"
     if timed_out:
         return "timeout"
     if not stderr.strip():
@@ -44,29 +49,46 @@ def classify(stderr: str, timed_out: bool) -> str:
 def analyze(run_id: str) -> dict[str, object]:
     run_dir = RUNS_DIR / run_id
     manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
-    verdicts = {}
+    max_tokens = manifest["config"].get("max_tokens", 0)
+
+    verdicts: dict[tuple[str, int], dict] = {}
+    responses: dict[tuple[str, int], dict] = {}
     for line in (run_dir / "trace.jsonl").read_text(encoding="utf-8").splitlines():
         event = json.loads(line)
+        data = event["data"]
+        key = (data.get("task_id"), data.get("sample"))
         if event["type"] == "verdict":
-            data = event["data"]
-            verdicts[(data["task_id"], data["sample"])] = data
+            verdicts[key] = data
+        elif event["type"] == "llm_response":
+            responses[key] = data
 
-    failures = [v for v in verdicts.values() if not v["passed"]]
+    def exhausted(key: tuple[str, int]) -> bool:
+        """The model spent its whole budget without closing a code block."""
+        r = responses.get(key)
+        if not r or not max_tokens:
+            return False
+        return r["completion_tokens"] >= max_tokens - 8 or "```" not in r["content"]
+
+    failures = [(k, v) for k, v in verdicts.items() if not v["passed"]]
     counts = Counter(
-        classify(v.get("stderr_tail", ""), v.get("timed_out", False)) for v in failures
+        classify(
+            v.get("stderr_tail", ""), v.get("timed_out", False), budget_exhausted=exhausted(k)
+        )
+        for k, v in failures
     )
+    n_exhausted = counts.get("budget_exhausted", 0)
+    scored = len(verdicts) - n_exhausted
+    passed = sum(1 for v in verdicts.values() if v["passed"])
     return {
         "run_id": run_id,
         "bench": manifest["config"]["bench"],
         "model": manifest["model"],
-        "tasks": manifest["totals"]["tasks"],
-        "pass@1": manifest["totals"]["pass@1"],
+        "tasks": len(verdicts),
+        "pass@1": manifest["totals"].get("pass@1") or passed / max(len(verdicts), 1),
+        "conditional_pass": passed / scored if scored else None,
+        "budget_exhausted": n_exhausted,
         "failures": len(failures),
         "taxonomy": dict(counts.most_common()),
-        "examples": [
-            {"task_id": v["task_id"], "stderr_tail": (v.get("stderr_tail") or "")[-300:]}
-            for v in failures[:3]
-        ],
     }
 
 
@@ -79,6 +101,12 @@ def main() -> None:
             f"tasks={report['tasks']}  pass@1={report['pass@1']:.3f}  "
             f"failures={report['failures']}"
         )
+        if report["budget_exhausted"]:
+            print(
+                f"  ! {report['budget_exhausted']} responses exhausted the token budget "
+                f"without emitting code — pass@1 understates capability."
+            )
+            print(f"  conditional pass rate (excluding those): {report['conditional_pass']:.3f}")
         for label, n in report["taxonomy"].items():
             share = n / report["failures"] * 100 if report["failures"] else 0
             print(f"  {label:<22} {n:>4}  ({share:.0f}% of failures)")
