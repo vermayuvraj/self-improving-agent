@@ -8,6 +8,14 @@ from sia.repair.conditions import build_retry_messages, summarize_failure
 from sia.sandbox import ExecResult, run_python
 from sia.trace import TraceWriter
 
+# Retries sample rather than decode greedily. This is forced, not stylistic:
+# at temperature 0 the model returns the identical solution on every
+# iteration regardless of seed, so `resample` would measure nothing and all
+# three conditions would produce flat k-curves. 0.8 matches the sampling
+# temperature used for pass@k in the HumanEval line of work, and is applied
+# identically to every condition so the contrasts stay matched.
+REPAIR_TEMPERATURE = 0.8
+
 
 @dataclass
 class RepairOutcome:
@@ -42,7 +50,7 @@ def repair_task(
     initial_code: str,
     initial_result: ExecResult,
     initial_passed: bool,
-    temperature: float = 0.0,
+    temperature: float = REPAIR_TEMPERATURE,
     max_tokens: int = 2048,
     seed: int | None = None,
     exec_timeout_s: float = 60.0,
@@ -51,7 +59,17 @@ def repair_task(
 
     Stops early on success — a solved task needs no further attempts, and
     continuing would inflate token cost without changing any pass rate.
+
+    ``temperature`` **must be > 0**. Greedy decoding is deterministic, so a
+    greedy retry returns the byte-identical solution forever: `resample`
+    becomes a no-op control and the k-curve is flat by construction. See
+    ``REPAIR_TEMPERATURE``.
     """
+    if temperature <= 0:
+        raise ValueError(
+            "repair requires temperature > 0; greedy decoding makes every retry "
+            "identical, which silently reduces `resample` to a no-op control"
+        )
     outcome = RepairOutcome(task_id=task.task_id, condition=condition)
     outcome.passed_at.append(initial_passed)
     if initial_passed:

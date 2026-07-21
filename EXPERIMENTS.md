@@ -33,6 +33,7 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
+| EXP-004 | 2026-07-22 | RQ1 | execution-feedback content beats blind resampling at matched budget; effect shrinks with scale | MBPP+ (primary) | — | pre-registered |
 | EXP-003b | 2026-07-22 | — | smaller models give the headroom and a scale axis | HumanEval+/MBPP+ | 54.3→80.5% HumanEval+, 56.6→70.9% MBPP+; MBPP+ powered at every scale (110–164 failures), HumanEval+ at none | ✅ closed |
 
 ## EXP-003 — EvalPlus baseline + harness validation (2026-07-21)
@@ -83,6 +84,81 @@ Baselines for 1.5B/3B are being collected as EXP-003b.
 for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
 feedback the repair loop hands back to the model, so without the fix the
 `feedback` condition would have been silently starved of its signal.
+
+## EXP-004 — Does execution feedback content pay? (pre-registered 2026-07-22)
+
+**RQ1.** Where is the cost/benefit knee in repair iterations *k*, and does
+execution-feedback *content* beat blind resampling at matched budget — across
+model scale?
+
+**Why this is open.** arXiv:2606.31511 finds feedback content beats placebo by
++15 on 0.5–1.5B models; arXiv:2606.26978 finds execution worth only 1.25 pp
+(n.s.) for frontier agents on repo tasks. Neither maps the middle, and neither
+reports the *shape* of the k-curve. We measure 1.5B → 3B → 7B on the same
+harness.
+
+**Hypotheses, fixed before running.**
+- **H1 (content).** `feedback` > `placebo` at k=8, paired, on MBPP+.
+- **H2 (attempts).** `placebo` > `resample`, i.e. re-reading your own failed
+  code helps even without knowing why it failed.
+- **H3 (scale).** The `feedback − resample` gap *shrinks* as model scale
+  grows, interpolating between the two bracketing papers.
+- **H4 (knee).** Marginal gain per iteration decays sharply; most of the
+  attainable gain arrives by k≈2.
+
+**Design.** 3 models × 3 conditions × k_max=8, on **MBPP+** (378 tasks,
+primary — the only benchmark powered at every scale per EXP-003b).
+HumanEval+ reported as secondary, not used for significance.
+
+Conditions differ *only* in what is appended after the original instruction:
+
+| Condition | Retry prompt contains | Isolates |
+|---|---|---|
+| `resample` | original instruction only | value of another draw |
+| `placebo` | + own previous code + content-free notice | value of seeing your attempt |
+| `feedback` | + own previous code + real execution output | value of the facts |
+
+**Controls.** All arms start from the *same* baseline run (identical first
+attempts, so pairing is exact rather than statistical), share the token
+budget (2048/attempt), the seed schedule, and the task set.
+
+**Retries sample at temperature 0.8; the k=0 baseline stays greedy.** This is
+forced, not stylistic, and was caught in smoke testing *before* any
+experimental run (see MEMORY/lessons.md). At temperature 0 the model returns
+the byte-identical solution on every iteration regardless of seed — verified
+directly: three consecutive `feedback` retries produced the same 30-token
+answer character-for-character. That would reduce `resample` to a no-op and
+flatten every k-curve by construction, producing a null result that is an
+artifact of decoding rather than evidence about feedback. 0.8 matches the
+sampling temperature conventional for pass@k in the HumanEval line of work
+and is applied **identically across all three conditions**, so the contrasts
+remain matched; only the shared k=0 point is greedy. The code now refuses
+temperature ≤ 0 for repair.
+
+**Metrics.** pass@1 as a function of k (nested from one trajectory); tokens
+consumed (the budget currency — batching-invariant, unlike latency);
+iterations used; failure taxonomy shift.
+
+**Analysis, fixed in advance.** Paired McNemar exact per contrast, bootstrap
+CI on the difference. Primary contrast is `feedback` vs `placebo` at k=8 on
+MBPP+. Three primary contrasts (H1–H3) → **Holm correction**; α=0.05.
+
+**Falsification.** H1 is refuted if `feedback` − `placebo` has a CI including
+zero at every scale. That is a publishable negative: it would say the gains
+attributed to execution feedback in this regime are gains from retrying,
+which is precisely the claim the placebo design exists to test.
+
+**Threats.** (a) Repair prompts are longer than baseline prompts, so
+truncation risk rises — `budget_exhausted` is monitored per arm and any arm
+where it exceeds ~5% is reported as budget-limited, not capability-limited
+(the EXP-001 lesson). (b) Early-exit on success means arms differ in tokens
+spent; that is intended (cost is an outcome) but means pass rate must always
+be read next to token cost. (c) MBPP+ tests are the same ones the feedback
+quotes, so feedback could leak test content — inspected, since the model sees
+only *failing input/expected/actual*, which is legitimate execution feedback,
+but this is noted as a difference from settings where held-out tests exist.
+
+**Status.** Pre-registered; launching 2026-07-22.
 
 ## EXP-003b — Model-scale baselines (2026-07-22)
 

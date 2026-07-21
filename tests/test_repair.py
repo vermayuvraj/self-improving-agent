@@ -178,6 +178,33 @@ def test_llm_error_ends_repair_without_crashing(tmp_path):
     assert len(out.passed_at) >= 2
 
 
+def test_greedy_repair_is_rejected(tmp_path):
+    """At temperature 0 every retry returns the identical solution, which
+    silently reduces `resample` to a no-op and flattens every k-curve."""
+    llm = FakeLLM([BAD])
+    with (
+        TraceWriter(tmp_path / "t.jsonl", "r") as tr,
+        pytest.raises(ValueError, match="temperature > 0"),
+    ):
+        repair_task(
+            TASK,
+            llm,
+            tr,
+            condition="resample",
+            k_max=2,
+            temperature=0.0,
+            initial_code="c",
+            initial_result=fail_result(),
+            initial_passed=False,
+        )
+
+
+def test_default_repair_temperature_samples():
+    from sia.repair import REPAIR_TEMPERATURE
+
+    assert REPAIR_TEMPERATURE > 0
+
+
 def test_seed_varies_per_iteration_so_resample_redraws(tmp_path):
     """A fixed seed would make `resample` return the same sample forever,
     silently turning the control into a no-op."""

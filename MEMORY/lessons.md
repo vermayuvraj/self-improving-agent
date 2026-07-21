@@ -1,5 +1,30 @@
 # Lessons learned
 
+## 2026-07-22 — A control that cannot vary is not a control
+
+The M3 repair loop initially inherited the project's greedy default
+(temperature 0). Greedy decoding is deterministic, so every retry returned the
+*byte-identical* solution — confirmed in the trace: three consecutive
+`feedback` iterations produced the same 30-token answer character-for-character.
+Varying the seed changed nothing, because seed has no effect at temperature 0.
+
+The damage would have been subtle rather than loud. Every k-curve would have
+been flat, `resample` would have measured nothing, and the experiment would
+have reported "no benefit from repair" — a *plausible* result matching part of
+the literature, with no error anywhere to notice. Caught only by reading actual
+model outputs in a smoke run before launching the real sweep.
+
+**Rules:**
+1. Before running an ablation, verify each arm can actually produce a
+   different outcome. A control whose output is fixed by construction measures
+   nothing.
+2. **Read raw model outputs from a smoke run before spending real compute.**
+   Aggregate metrics looked fine; only the text revealed identical responses.
+3. Defaults inherited from a different context (greedy is right for
+   *measuring* a baseline, wrong for *resampling*) are a recurring hazard —
+   same family as [[the matched-budget confound]] where a setting that was
+   correct for one arm was wrong for another.
+
 ## 2026-07-21 — Capture *both* output streams from executed code
 
 The EvalPlus harness prints its failing-input diagnostics to stdout and exits

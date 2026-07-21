@@ -23,7 +23,7 @@ from sia.bench import BenchTask, load_tasks
 from sia.bench.base import DEFAULT_DATA_DIR
 from sia.llm import LLMClient
 from sia.parallel import default_workers, parallel_map
-from sia.repair.loop import RepairOutcome, repair_task
+from sia.repair.loop import REPAIR_TEMPERATURE, RepairOutcome, repair_task
 from sia.sandbox import ExecResult
 from sia.trace import RunManifest, TraceWriter
 from sia.trace.writer import new_run_id
@@ -118,18 +118,25 @@ def run_repair(
     condition: str,
     k_max: int,
     baseline_run_id: str,
-    temperature: float = 0.0,
+    temperature: float = REPAIR_TEMPERATURE,
     max_tokens: int = 2048,
     seed: int | None = 7,
     exec_timeout_s: float = 60.0,
     runs_dir: Path = Path("runs"),
+    baseline_runs_dir: Path | None = None,
     data_dir: Path = DEFAULT_DATA_DIR,
     tasks: list[BenchTask] | None = None,
     workers: int | None = None,
     progress: Callable[[str], None] | None = None,
 ) -> RepairSummary:
+    # The baseline may live outside the output directory (archived runs, or a
+    # smoke test writing elsewhere), so the two are independent.
     baseline = load_baseline(
-        baseline_run_id, bench, runs_dir=runs_dir, data_dir=data_dir, tasks=tasks
+        baseline_run_id,
+        bench,
+        runs_dir=baseline_runs_dir or runs_dir,
+        data_dir=data_dir,
+        tasks=tasks,
     )
     if not baseline:
         raise ValueError(f"baseline run {baseline_run_id!r} yielded no tasks")

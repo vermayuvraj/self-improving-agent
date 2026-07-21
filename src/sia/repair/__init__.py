@@ -14,6 +14,12 @@ attempts:
 """
 
 from sia.repair.conditions import CONDITIONS, build_retry_messages
-from sia.repair.loop import RepairOutcome, repair_task
+from sia.repair.loop import REPAIR_TEMPERATURE, RepairOutcome, repair_task
 
-__all__ = ["CONDITIONS", "RepairOutcome", "build_retry_messages", "repair_task"]
+__all__ = [
+    "CONDITIONS",
+    "REPAIR_TEMPERATURE",
+    "RepairOutcome",
+    "build_retry_messages",
+    "repair_task",
+]
