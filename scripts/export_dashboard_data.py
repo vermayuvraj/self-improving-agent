@@ -8,14 +8,10 @@ experiment: `uv run python scripts/export_dashboard_data.py`.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from analyze_failures import analyze  # noqa: E402
-
-from sia.bench import wilson_ci  # noqa: E402
+from sia.analysis import analyze_run
+from sia.bench import wilson_ci
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = ROOT / "runs"
@@ -53,10 +49,10 @@ def collect() -> list[dict[str, object]]:
         # A pass@1 depressed by budget exhaustion measures budget fit, not
         # capability. Ship the caveat with the number so the chart cannot be
         # read as a capability claim (EXP-001 confound).
-        report = analyze(manifest["run_id"])
-        if report["budget_exhausted"]:
-            row["budget_exhausted"] = report["budget_exhausted"]
-            row["conditional_pass"] = round(report["conditional_pass"], 4)
+        report = analyze_run(manifest["run_id"], runs_dir=RUNS_DIR)
+        if report.budget_exhausted and report.conditional_pass is not None:
+            row["budget_exhausted"] = report.budget_exhausted
+            row["conditional_pass"] = round(report.conditional_pass, 4)
         rows.append(row)
     return rows
 

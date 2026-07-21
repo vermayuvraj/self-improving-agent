@@ -33,7 +33,7 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
-| EXP-003b | running | — | smaller models give the headroom and a scale axis | HumanEval+/MBPP+ | — | running |
+| EXP-003b | 2026-07-22 | — | smaller models give the headroom and a scale axis | HumanEval+/MBPP+ | 54.3→80.5% HumanEval+, 56.6→70.9% MBPP+; MBPP+ powered at every scale (110–164 failures), HumanEval+ at none | ✅ closed |
 
 ## EXP-003 — EvalPlus baseline + harness validation (2026-07-21)
 
@@ -83,6 +83,41 @@ Baselines for 1.5B/3B are being collected as EXP-003b.
 for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
 feedback the repair loop hands back to the model, so without the fix the
 `feedback` condition would have been silently starved of its signal.
+
+## EXP-003b — Model-scale baselines (2026-07-22)
+
+**Purpose.** Supply the statistical power EvalPlus alone did not (EXP-003),
+and establish the scale axis M3's design now rests on.
+
+| Model | HumanEval+ | failures | MBPP+ | failures |
+|---|---|---|---|---|
+| qwen2.5-coder:1.5b-instruct | 0.543 [0.466, 0.617] | 75 | 0.566 [0.516, 0.615] | **164** |
+| qwen2.5-coder:3b-instruct | 0.738 [0.666, 0.799] | 43 | 0.598 [0.548, 0.646] | **152** |
+| qwen2.5-coder:7b | 0.805 [0.738, 0.858] | 32 | 0.709 [0.661, 0.753] | **110** |
+
+Monotonic in scale on both benchmarks, as expected. Full table with paired
+statistics: `experiments/EXP-003b/report.md`.
+
+**Exit criterion (≥100 failing tasks per cell): met on MBPP+ at every scale
+(110–164), not met on HumanEval+ at any scale (32–75).** Decision:
+**MBPP+ is M3's primary benchmark; HumanEval+ is secondary** and reported for
+comparability with the literature, not relied on for significance. Pooling the
+two is rejected — different task distributions and difficulty, so a pooled
+rate would be a weighted average of two different things.
+
+**Validation against the Qwen2.5-Coder report (Table 16).** MBPP+ agrees
+closely at every scale (−0.8, −2.6, −2.8); HumanEval+ agreement degrades as
+the model shrinks (−3.6, −6.7, −12.2). That pattern is consistent with Q4_K_M
+quantisation costing small models more than large ones — a documented effect,
+and one that argues for treating our absolute HumanEval+ numbers for the 1.5B
+model as a lower bound rather than a published-score reproduction. It does not
+threaten the ablations, which are *within-model* paired comparisons where
+quantisation is held constant.
+
+**Note on adoption.** These runs predate the grid launcher. They were adopted
+into `cells.json` only after verifying each run's recorded config matches what
+the spec would have produced; a 12-task smoke run was correctly rejected by
+that check. Results are never attributed to a configuration that did not run.
 
 ## EXP-001 — Default model selection (pre-registered before run)
 

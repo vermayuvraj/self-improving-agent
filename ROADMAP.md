@@ -56,7 +56,16 @@ Two findings from M1 forced this shape:
    ablation unmeasurable. Repo-level work becomes an optional cloud-API
    extension serving RQ8 (transfer), not a local milestone.
 
-## M2 — Experiment engine + measurable headroom ⬜ (next)
+## M2 — Experiment engine + measurable headroom ✅ (2026-07-22)
+
+Exit criteria met. EvalPlus integrated and validated against published
+numbers; `sia exp` runs a resumable grid from a TOML spec and `sia report`
+emits a paper-ready table with paired statistics. Headroom secured via the
+scale axis rather than a benchmark swap (EXP-003, EXP-003b): **MBPP+ carries
+110–164 failing tasks per cell at every model scale** and becomes M3's
+primary benchmark; HumanEval+ (32–75) is secondary.
+
+<details><summary>Original scope</summary>
 
 Turn one-off runs into experiments, and make effects measurable.
 
@@ -68,6 +77,7 @@ Turn one-off runs into experiments, and make effects measurable.
 - **Exit criteria:** one command launches a full ablation grid and emits a
   paper-ready table; EvalPlus baseline established with ≥100 failing tasks
   per benchmark to ablate against.
+</details>
 
 ## M3 — Self-debugging repair loop ⬜ (the core contribution)
 

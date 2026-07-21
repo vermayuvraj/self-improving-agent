@@ -14,6 +14,32 @@ window.SIA_RUNS = [
     ]
   },
   {
+    "run_id": "0b1aff369e5c",
+    "date": "2026-07-21",
+    "bench": "mbpp+",
+    "model": "qwen2.5-coder:3b-instruct",
+    "pass1": 0.5979,
+    "tasks": 378,
+    "samples": 1,
+    "ci": [
+      0.5477,
+      0.6461
+    ]
+  },
+  {
+    "run_id": "5010d1599505",
+    "date": "2026-07-21",
+    "bench": "humaneval+",
+    "model": "qwen2.5-coder:7b",
+    "pass1": 0.8049,
+    "tasks": 164,
+    "samples": 1,
+    "ci": [
+      0.7375,
+      0.8583
+    ]
+  },
+  {
     "run_id": "7656889d539c",
     "date": "2026-07-20",
     "bench": "humaneval",
@@ -29,6 +55,45 @@ window.SIA_RUNS = [
     "conditional_pass": 0.9792
   },
   {
+    "run_id": "7ce4c1224d11",
+    "date": "2026-07-21",
+    "bench": "mbpp+",
+    "model": "qwen2.5-coder:1.5b-instruct",
+    "pass1": 0.5661,
+    "tasks": 378,
+    "samples": 1,
+    "ci": [
+      0.5158,
+      0.6152
+    ]
+  },
+  {
+    "run_id": "8ebb8288a7dd",
+    "date": "2026-07-21",
+    "bench": "humaneval+",
+    "model": "qwen2.5-coder:3b-instruct",
+    "pass1": 0.7378,
+    "tasks": 164,
+    "samples": 1,
+    "ci": [
+      0.6656,
+      0.7991
+    ]
+  },
+  {
+    "run_id": "987b7799da47",
+    "date": "2026-07-21",
+    "bench": "humaneval+",
+    "model": "qwen2.5-coder:1.5b-instruct",
+    "pass1": 0.5427,
+    "tasks": 164,
+    "samples": 1,
+    "ci": [
+      0.4663,
+      0.6171
+    ]
+  },
+  {
     "run_id": "b2e16d243112",
     "date": "2026-07-20",
     "bench": "mbpp",
@@ -39,6 +104,19 @@ window.SIA_RUNS = [
     "ci": [
       0.7082,
       0.7841
+    ]
+  },
+  {
+    "run_id": "f0f2559baf8d",
+    "date": "2026-07-21",
+    "bench": "mbpp+",
+    "model": "qwen2.5-coder:7b",
+    "pass1": 0.709,
+    "tasks": 378,
+    "samples": 1,
+    "ci": [
+      0.6613,
+      0.7525
     ]
   }
 ];

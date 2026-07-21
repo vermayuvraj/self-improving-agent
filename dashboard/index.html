@@ -16,8 +16,12 @@
     --grid:           #e1e0d9;
     --baseline:       #c3c2b7;
     --border:         rgba(11,11,11,0.10);
-    --series-1:       #2a78d6;   /* blue  — categorical slot 1 */
-    --series-2:       #008300;   /* green — categorical slot 2 */
+    /* Categorical slots in fixed order — never cycled, never reassigned by
+       rank, so a model keeps its colour as the run set grows. */
+    --series-1:       #2a78d6;   /* blue */
+    --series-2:       #008300;   /* green */
+    --series-3:       #e87ba4;   /* magenta */
+    --series-4:       #eda100;   /* yellow */
     --status-good:    #0ca30c;
     --good-text:      #006300;
     --accent:         #2a78d6;
@@ -35,6 +39,8 @@
       --border:         rgba(255,255,255,0.10);
       --series-1:       #3987e5;
       --series-2:       #008300;
+      --series-3:       #d55181;
+      --series-4:       #c98500;
       --status-good:    #0ca30c;
       --good-text:      #0ca30c;
       --accent:         #3987e5;
@@ -52,6 +58,8 @@
     --border:         rgba(255,255,255,0.10);
     --series-1:       #3987e5;
     --series-2:       #008300;
+    --series-3:       #d55181;
+    --series-4:       #c98500;
     --status-good:    #0ca30c;
     --good-text:      #0ca30c;
     --accent:         #3987e5;
@@ -424,9 +432,15 @@
       return;
     }
 
-    const benches = [...new Set(RUNS.map(r => r.bench))];
-    const models = [...new Set(RUNS.map(r => r.model))].sort();
-    const palette = [cssVar("--series-1"), cssVar("--series-2")];
+    // Benchmarks in substrate order (base suites, then their EvalPlus
+    // counterparts). Models sorted by scale so colour tracks capability.
+    const BENCH_ORDER = ["humaneval", "humaneval+", "mbpp", "mbpp+"];
+    const benches = [...new Set(RUNS.map(r => r.bench))]
+      .sort((a, b) => BENCH_ORDER.indexOf(a) - BENCH_ORDER.indexOf(b));
+    const scale = m => parseFloat((m.match(/(\d+(?:\.\d+)?)b/i) || [0, 99])[1]);
+    const models = [...new Set(RUNS.map(r => r.model))]
+      .sort((a, b) => scale(a) - scale(b) || a.localeCompare(b));
+    const palette = [1, 2, 3, 4].map(i => cssVar(`--series-${i}`));
     const ink = { p: cssVar("--text-primary"), s: cssVar("--text-secondary"), m: cssVar("--text-muted") };
     const gridC = cssVar("--grid"), baseC = cssVar("--baseline");
     const color = m => palette[models.indexOf(m) % palette.length];
