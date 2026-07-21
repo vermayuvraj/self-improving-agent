@@ -10,7 +10,16 @@ Legend: ✅ done · 🔨 in progress · ⬜ not started
 
 Repo, management documents, literature grounding, architecture decisions.
 
-## M1 — Minimal baseline agent + fast evaluation loop 🔨
+## M1 — Minimal baseline agent + fast evaluation loop ✅ (2026-07-21)
+
+Exit criteria met: HumanEval 85.4% / MBPP 74.8% for `qwen2.5-coder:7b`, both
+in the published range for the model; runs are reproducible from config
+alone (manifest records config hash, model, seed, git commit). EXP-001
+closed. **Open issue for M2: statistical headroom** — an 85.4% baseline
+leaves only 24 failing HumanEval tasks, too few to power capability
+ablations. Add a harder benchmark or a weaker ablation subject before M3.
+
+<details><summary>Original scope</summary>
 
 The smallest agent that can be benchmarked, plus the harness to benchmark it.
 
@@ -23,6 +32,7 @@ The smallest agent that can be benchmarked, plus the harness to benchmark it.
 - **Exit criteria:** pass@1 on HumanEval and MBPP reproduces published numbers
   for the chosen model within noise; two identical runs produce comparable
   results from config alone.
+</details>
 
 ## M2 — Experiment engine ⬜
 
