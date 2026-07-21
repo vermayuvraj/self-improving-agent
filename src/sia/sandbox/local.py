@@ -35,8 +35,14 @@ def run_python(
     timeout_s: float = 10.0,
     max_output_chars: int = 20_000,
     python: str | None = None,
+    files: dict[str, str] | None = None,
 ) -> ExecResult:
     """Run a Python program in an isolated temp directory.
+
+    ``files`` writes auxiliary files (name → contents) alongside ``main.py``
+    before execution — used to keep large test inputs and an oracle
+    implementation out of the program source, and to give the candidate its
+    own module namespace. Names must be plain filenames, not paths.
 
     Uses ``-I`` (isolated mode: no user site, no env-var influence) and a
     fresh cwd per run. Known limits, accepted for M1: no memory/network caps,
@@ -44,6 +50,10 @@ def run_python(
     """
     interpreter = python or sys.executable
     with tempfile.TemporaryDirectory(prefix="sia-exec-", ignore_cleanup_errors=True) as td:
+        for name, contents in (files or {}).items():
+            if Path(name).name != name:
+                raise ValueError(f"auxiliary file name must not contain a path: {name!r}")
+            (Path(td) / name).write_text(contents, encoding="utf-8")
         program = Path(td) / "main.py"
         program.write_text(code, encoding="utf-8")
         start = time.perf_counter()

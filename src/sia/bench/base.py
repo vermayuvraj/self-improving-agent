@@ -31,6 +31,19 @@ class BenchTask:
     canonical_solution: str = ""
 
 
+def build_execution(task: BenchTask, model_output: str) -> tuple[str, dict[str, str]]:
+    """Return (program, auxiliary files) to execute for this task.
+
+    Base benchmarks append their tests to the solution; EvalPlus benchmarks
+    run differential testing against an oracle in separate modules.
+    """
+    if task.bench.endswith("+"):
+        from sia.bench.evalplus import build_program
+
+        return build_program(task, extract_code(model_output))
+    return assemble_program(task, model_output), {}
+
+
 def assemble_program(task: BenchTask, model_output: str) -> str:
     """Turn raw model output into an executable program ending in tests.
 
@@ -74,4 +87,8 @@ def load_tasks(bench: str, data_dir: Path = DEFAULT_DATA_DIR) -> list[BenchTask]
         from sia.bench.mbpp import load_mbpp
 
         return load_mbpp(data_dir)
+    if bench in ("humaneval+", "mbpp+"):
+        from sia.bench.evalplus import load_evalplus
+
+        return load_evalplus(bench, data_dir)
     raise ValueError(f"unknown benchmark: {bench!r}")

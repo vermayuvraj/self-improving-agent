@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from sia.agent import solve_single_shot
-from sia.bench import BenchTask, assemble_program, load_tasks, pass_at_k, wilson_ci
+from sia.bench import BenchTask, build_execution, load_tasks, pass_at_k, wilson_ci
 from sia.bench.base import DEFAULT_DATA_DIR
 from sia.llm import LLMClient, LLMError
 from sia.sandbox import run_python
@@ -111,8 +111,8 @@ def run_benchmark(
                 totals["completion_tokens"] += response.completion_tokens
                 totals["llm_latency_ms"] += response.latency_ms
 
-                program = assemble_program(task, response.content)
-                result = run_python(program, timeout_s=exec_timeout_s)
+                program, aux = build_execution(task, response.content)
+                result = run_python(program, timeout_s=exec_timeout_s, files=aux)
                 totals["exec_ms"] += result.duration_ms
                 passed = result.ok
                 passed_count += passed

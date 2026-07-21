@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from sia.bench import BENCHMARKS
 from sia.llm import LLMError, OpenAICompatClient
 from sia.llm.openai_compat import OLLAMA_BASE_URL
 from sia.runner import run_benchmark
@@ -16,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run a benchmark")
-    run.add_argument("--bench", required=True, choices=["humaneval", "mbpp"])
+    run.add_argument("--bench", required=True, choices=list(BENCHMARKS))
     run.add_argument("--model", required=True, help="model name as served by the endpoint")
     run.add_argument("--base-url", default=OLLAMA_BASE_URL)
     run.add_argument("--api-key", default=None)
