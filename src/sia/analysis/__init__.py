@@ -5,12 +5,13 @@ so any completed run can be re-analysed without re-running it.
 """
 
 from sia.analysis.stats import mcnemar_exact, paired_bootstrap_diff
-from sia.analysis.taxonomy import FailureReport, analyze_run, classify
+from sia.analysis.taxonomy import FailureReport, analyze_run, classify, failure_output
 
 __all__ = [
     "FailureReport",
     "analyze_run",
     "classify",
+    "failure_output",
     "mcnemar_exact",
     "paired_bootstrap_diff",
 ]

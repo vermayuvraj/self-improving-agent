@@ -19,8 +19,34 @@ def test_classify_buckets():
     assert classify("SyntaxError: x", False) == "syntax_error"
     assert classify("solution does not define f", False) == "missing_entry_point"
     assert classify("", True) == "timeout"
-    assert classify("", False) == "no_stderr"
+    assert classify("", False) == "no_output"
     assert classify("ValueError: nope", False) == "other_runtime_error"
+
+
+def test_classify_evalplus_differential_failure():
+    # The EvalPlus harness reports on stdout and exits non-zero; the combined
+    # output must classify as a wrong answer, not "other".
+    output = (
+        "input#7 wrong answer\n  args=[1, 2]\n  expected=3\n  actual  =-1\n"
+        "SystemExit: 1 failing input(s) of 999"
+    )
+    assert classify(output, False) == "wrong_answer"
+
+
+def test_classify_prefers_crash_over_wrong_answer():
+    # EvalPlus prints both signals for a crashing candidate; the crash is the
+    # more specific diagnosis.
+    output = "input#2 raised TypeError: bad operand\nSystemExit: 1 failing input(s) of 500"
+    assert classify(output, False) == "type_error"
+
+
+def test_failure_output_combines_streams_and_tolerates_old_traces():
+    from sia.analysis import failure_output
+
+    assert failure_output({"stdout_tail": "out", "stderr_tail": "err"}) == "out\nerr"
+    # Pre-M2 traces have no stdout_tail at all.
+    assert failure_output({"stderr_tail": "err"}) == "err"
+    assert failure_output({}) == ""
 
 
 def _write_run(tmp_path, run_id, rows, max_tokens=2048):
@@ -37,7 +63,7 @@ def _write_run(tmp_path, run_id, rows, max_tokens=2048):
         encoding="utf-8",
     )
     lines = []
-    for i, (task_id, passed, tokens, content, stderr) in enumerate(rows):
+    for i, (task_id, passed, tokens, content, output) in enumerate(rows):
         lines.append(
             json.dumps(
                 {
@@ -61,7 +87,8 @@ def _write_run(tmp_path, run_id, rows, max_tokens=2048):
                         "sample": 0,
                         "passed": passed,
                         "timed_out": False,
-                        "stderr_tail": stderr,
+                        "stdout_tail": "",
+                        "stderr_tail": output,
                     },
                     "seq": 2 * i + 1,
                 }

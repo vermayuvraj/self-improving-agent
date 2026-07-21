@@ -16,30 +16,54 @@ from pathlib import Path
 DEFAULT_RUNS_DIR = Path("runs")
 
 
-def classify(stderr: str, timed_out: bool, *, budget_exhausted: bool = False) -> str:
+def classify(output: str, timed_out: bool, *, budget_exhausted: bool = False) -> str:
+    """Bucket one failure from the combined stdout+stderr of its execution.
+
+    Order matters. ``budget_exhausted`` outranks everything (a truncated
+    response's downstream error says nothing about the model). Crash signals
+    are checked before wrong-answer signals, because the EvalPlus harness
+    reports *both* — it prints ``input#N raised TypeError`` and then exits
+    non-zero — and the crash is the more specific diagnosis.
+    """
     if budget_exhausted:
         return "budget_exhausted"
     if timed_out:
         return "timeout"
-    if not stderr.strip():
-        return "no_stderr"
-    if "SyntaxError" in stderr or "IndentationError" in stderr:
+    if not output.strip():
+        return "no_output"
+    if "SyntaxError" in output or "IndentationError" in output:
         return "syntax_error"
-    if "does not define" in stderr:
+    if "does not define" in output:
         return "missing_entry_point"
-    if "NameError" in stderr:
-        return "name_error"
-    if "ImportError" in stderr or "ModuleNotFoundError" in stderr:
+    if "ImportError" in output or "ModuleNotFoundError" in output:
         return "import_error"
-    if "TypeError" in stderr:
-        return "type_error"
-    if "IndexError" in stderr or "KeyError" in stderr:
-        return "lookup_error"
-    if "RecursionError" in stderr:
+    if "RecursionError" in output:
         return "recursion_error"
-    if "AssertionError" in stderr or "wrong answer" in stderr or "assert" in stderr:
+    if "NameError" in output:
+        return "name_error"
+    if "TypeError" in output:
+        return "type_error"
+    if "IndexError" in output or "KeyError" in output:
+        return "lookup_error"
+    # EvalPlus differential failure, or a plain assertion from the base suites.
+    if (
+        "wrong answer" in output
+        or "failing input" in output
+        or "AssertionError" in output
+        or "assert" in output
+    ):
         return "wrong_answer"
     return "other_runtime_error"
+
+
+def failure_output(verdict: dict) -> str:
+    """Combined execution output for a verdict, stdout first.
+
+    Traces written before M2 carry only ``stderr_tail``; ``stdout_tail`` is
+    absent rather than empty, so this stays correct for older runs.
+    """
+    parts = [verdict.get("stdout_tail") or "", verdict.get("stderr_tail") or ""]
+    return "\n".join(p for p in parts if p)
 
 
 @dataclass
@@ -96,7 +120,7 @@ def analyze_run(run_id: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> FailureReport
         if verdict["passed"]:
             continue
         label = classify(
-            verdict.get("stderr_tail", ""),
+            failure_output(verdict),
             verdict.get("timed_out", False),
             budget_exhausted=exhausted(key),
         )

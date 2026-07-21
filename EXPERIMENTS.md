@@ -32,6 +32,57 @@ the model is nondeterministic.
 |----|------|----|--------------------|-----------|--------|--------|
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
+| EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
+| EXP-003b | running | — | smaller models give the headroom and a scale axis | HumanEval+/MBPP+ | — | running |
+
+## EXP-003 — EvalPlus baseline + harness validation (2026-07-21)
+
+**Purpose.** Establish the ablation substrate for M3 and check our harness
+against published numbers. Not a hypothesis test.
+
+**Results** (`qwen2.5-coder:7b`, greedy, seed 7), with the Qwen2.5-Coder
+technical report (arXiv:2409.12186, Table 16) as the external reference:
+
+| Benchmark | Ours | Published | Δ | Tasks | **Failures** |
+|---|---|---|---|---|---|
+| HumanEval | 0.854 | 0.884 | −3.0 | 164 | 24 |
+| HumanEval+ | 0.805 | 0.841 | −3.6 | 164 | 32 |
+| MBPP | 0.748 | 0.835 | −8.7 | 500 | 126 |
+| **MBPP+** | **0.709** | **0.717** | **−0.8** | 378 | **110** |
+
+**Harness validity.** Three of four land within ~3.6 points of published, and
+MBPP+ within 0.8 — strong evidence the EvalPlus differential-testing
+implementation (oracle, contract stripping, float tolerance) is correct. The
+residual ~3-point deficit is expected and explained: we run Q4_K_M quantised
+weights, zero-shot, with our own prompt. The MBPP outlier (−8.7) is a
+protocol difference, not a harness bug — the report uses a different MBPP
+setup; our MBPP+ figure, which is the one M3 will use, agrees closely.
+
+**Headroom (the reason for this experiment).** EvalPlus does *not* deliver
+the 10–20 point drop the literature reports for older models — Qwen2.5-Coder
+is simply robust to the harder tests (−4.9 on HumanEval, −3.9 on MBPP).
+Consequence for the M2 exit criterion (≥100 failing tasks per benchmark):
+
+- **MBPP+ passes** — 110 failures.
+- **HumanEval+ fails** — 32 failures. Underpowered for detecting the effect
+  sizes M3 cares about; it stays as a secondary benchmark, not a primary one.
+
+**Consequence — model scale becomes an experimental dimension.** Rather than
+hunt for a harder benchmark, add smaller models from the same family, whose
+published scores give ample headroom (1.5B: 66.5 HumanEval+ / 59.4 MBPP+;
+3B: 80.5 / 62.4). This is strictly better than a benchmark swap because it
+**converts the headroom problem into the paper's central axis**: the two
+papers bracketing RQ1 differ in model scale (0.5–1.5B vs frontier), so
+measuring repair benefit across 1.5B → 3B → 7B *is* the contribution.
+Baselines for 1.5B/3B are being collected as EXP-003b.
+
+**Bug found and fixed.** The initial taxonomy put 97% of EvalPlus failures in
+`other_runtime_error`: the harness writes its failing-input diagnostics to
+**stdout**, but verdict events only captured stderr. Runs now record
+`stdout_tail` too, and classification reads both streams. This is load-bearing
+for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
+feedback the repair loop hands back to the model, so without the fix the
+`feedback` condition would have been silently starved of its signal.
 
 ## EXP-001 — Default model selection (pre-registered before run)
 

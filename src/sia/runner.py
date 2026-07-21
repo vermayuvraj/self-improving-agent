@@ -124,6 +124,10 @@ def run_benchmark(
                     exit_code=result.exit_code,
                     timed_out=result.timed_out,
                     stderr_tail=result.stderr[-2000:],
+                    # EvalPlus writes its failing-input diagnostics to stdout,
+                    # not stderr. This is the signal M3's repair loop feeds
+                    # back to the model, so it must be in the trace.
+                    stdout_tail=result.stdout[-2000:],
                 )
                 row.update(
                     passed=passed,

@@ -1,5 +1,21 @@
 # Lessons learned
 
+## 2026-07-21 — Capture *both* output streams from executed code
+
+The EvalPlus harness prints its failing-input diagnostics to stdout and exits
+non-zero with a bare `SystemExit` on stderr. Verdict events recorded only
+`stderr_tail`, so 97% of real wrong-answers were bucketed as
+`other_runtime_error` — and, far worse, the informative part of the failure
+(failing input, expected vs actual) was **discarded before it reached the
+trace**. M3's repair loop feeds exactly that text back to the model, so the
+`feedback` condition would have been starved of its signal while still
+*looking* like it ran correctly.
+
+**Rule:** whenever the harness executes something, persist stdout and stderr
+together. Test-runner conventions about which stream carries meaning vary,
+and a trace is only as good as what it captured — you cannot recover a stream
+you never wrote down. Same family as [[extraction-as-instrumentation]].
+
 ## 2026-07-21 — A "matched" budget that binds on one arm is a confound
 
 EXP-001 gave both models `max_tokens=2048`, which looks like a fair control.
