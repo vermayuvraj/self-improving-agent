@@ -457,7 +457,7 @@
         const x = cx - total / 2 + mi * (barW + 2);
         const h = Math.max(2, plotH * r.pass1);
         const y = padT + plotH - h;
-        bars += `<g class="bar" data-bench="${esc(b)}" data-model="${esc(m)}" data-p="${r.pass1}" data-lo="${r.ci ? r.ci[0] : ""}" data-hi="${r.ci ? r.ci[1] : ""}" data-n="${r.tasks || ""}">
+        bars += `<g class="bar" data-bench="${esc(b)}" data-model="${esc(m)}" data-p="${r.pass1}" data-lo="${r.ci ? r.ci[0] : ""}" data-hi="${r.ci ? r.ci[1] : ""}" data-n="${r.tasks || ""}" data-exhausted="${r.budget_exhausted || ""}" data-cond="${r.conditional_pass || ""}">
           <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" ry="4" fill="${color(m)}"/>
           <rect x="${x}" y="${y + Math.min(6, h)}" width="${barW}" height="${Math.max(0, h - Math.min(6, h))}" fill="${color(m)}"/>`;
         if (r.ci) {
@@ -467,24 +467,39 @@
             <line x1="${cxb - 4}" y1="${yHi}" x2="${cxb + 4}" y2="${yHi}" stroke="${ink.m}" stroke-width="1.5"/>`;
         }
         const labelY = (r.ci ? Math.min(y, padT + plotH * (1 - r.ci[1])) : y) - 7;
-        bars += `<text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" font-size="11.5" font-weight="600" fill="${ink.s}" style="font-variant-numeric:tabular-nums">${(r.pass1 * 100).toFixed(1)}</text>
-          <rect x="${x - 4}" y="${padT}" width="${barW + 8}" height="${plotH}" fill="transparent"/></g>`;
+        const flagged = r.budget_exhausted ? " ⚠" : "";
+        bars += `<text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" font-size="11.5" font-weight="600" fill="${ink.s}" style="font-variant-numeric:tabular-nums">${(r.pass1 * 100).toFixed(1)}${flagged}</text>`;
+        if (r.conditional_pass != null) {
+          // Dashed rule at the capability-conditional rate: the bar alone
+          // understates the model (EXP-001 budget confound).
+          const yc = padT + plotH * (1 - r.conditional_pass);
+          bars += `<line x1="${x - 2}" y1="${yc}" x2="${x + barW + 2}" y2="${yc}" stroke="${color(m)}" stroke-width="2" stroke-dasharray="4 3"/>`;
+        }
+        bars += `<rect x="${x - 4}" y="${padT}" width="${barW + 8}" height="${plotH}" fill="transparent"/></g>`;
       });
     });
 
     area.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Grouped bar chart of pass at 1 by model and benchmark">${gridLines}${bars}${labels}</svg>`;
-    note.textContent = "Bars show pass@1 (greedy decoding); whiskers are 95% Wilson intervals." + (demo ? " — DEMO DATA" : "");
+    const anyFlagged = RUNS.some(r => r.budget_exhausted);
+    note.textContent =
+      "Bars show pass@1 (greedy decoding); whiskers are 95% Wilson intervals."
+      + (anyFlagged
+        ? " ⚠ marks runs where the model exhausted its token budget before emitting code — that bar measures budget fit, not capability; the dashed line is its pass rate when it did finish."
+        : "")
+      + (demo ? " — DEMO DATA" : "");
 
     // table view (accessibility requirement)
     tv.hidden = false;
     document.getElementById("table-holder").innerHTML = `
       <table class="data">
-        <thead><tr><th>Benchmark</th><th>Model</th><th>pass@1</th><th>95% CI</th><th>Tasks</th></tr></thead>
+        <thead><tr><th>Benchmark</th><th>Model</th><th>pass@1</th><th>95% CI</th><th>Tasks</th><th>Budget-exhausted</th><th>Pass given code</th></tr></thead>
         <tbody>${RUNS.map(r => `<tr>
           <td>${esc(r.bench)}</td><td>${esc(r.model)}</td>
           <td>${(r.pass1 * 100).toFixed(1)}%</td>
           <td>${r.ci ? `[${(r.ci[0] * 100).toFixed(1)}, ${(r.ci[1] * 100).toFixed(1)}]` : "—"}</td>
-          <td>${r.tasks ?? "—"}</td></tr>`).join("")}</tbody>
+          <td>${r.tasks ?? "—"}</td>
+          <td>${r.budget_exhausted ? `${r.budget_exhausted} (${(r.budget_exhausted / r.tasks * 100).toFixed(0)}%)` : "0"}</td>
+          <td>${r.conditional_pass != null ? `${(r.conditional_pass * 100).toFixed(1)}%` : "—"}</td></tr>`).join("")}</tbody>
       </table>`;
 
     // hover tooltips
@@ -495,7 +510,10 @@
           <div class="tt-row"><span>benchmark</span><span>${esc(d.bench)}</span></div>
           <div class="tt-row"><span>pass@1</span><span>${(+d.p * 100).toFixed(1)}%</span></div>
           ${d.lo ? `<div class="tt-row"><span>95% CI</span><span>[${(+d.lo * 100).toFixed(1)}, ${(+d.hi * 100).toFixed(1)}]</span></div>` : ""}
-          ${d.n ? `<div class="tt-row"><span>tasks</span><span>${d.n}</span></div>` : ""}`;
+          ${d.n ? `<div class="tt-row"><span>tasks</span><span>${d.n}</span></div>` : ""}
+          ${d.exhausted ? `<div class="tt-row"><span>budget-exhausted</span><span>${d.exhausted} (${(d.exhausted / d.n * 100).toFixed(0)}%)</span></div>
+            <div class="tt-row"><span>pass given code emitted</span><span>${(+d.cond * 100).toFixed(1)}%</span></div>
+            <div style="margin-top:6px;font-size:11.5px">This bar measures budget fit, not capability — the model ran out of tokens mid-reasoning. Dashed line = rate when it finished.</div>` : ""}`;
         tooltip.style.opacity = 1;
         const pad = 14;
         let x = ev.clientX + pad, y = ev.clientY + pad;

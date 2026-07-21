@@ -8,9 +8,14 @@ experiment: `uv run python scripts/export_dashboard_data.py`.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
-from sia.bench import wilson_ci
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from analyze_failures import analyze  # noqa: E402
+
+from sia.bench import wilson_ci  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = ROOT / "runs"
@@ -20,7 +25,8 @@ OUT = ROOT / "dashboard" / "runs.js"
 def collect() -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for manifest_path in sorted(RUNS_DIR.glob("*/manifest.json")):
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        # utf-8-sig tolerates a BOM (PowerShell 5.1 writes one) and plain UTF-8.
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         if manifest.get("outcome") != "completed":
             continue
         totals = manifest.get("totals", {})
@@ -43,6 +49,14 @@ def collect() -> list[dict[str, object]]:
         if config.get("samples", 1) == 1:
             lo, hi = wilson_ci(round(pass1 * tasks), tasks)
             row["ci"] = [round(lo, 4), round(hi, 4)]
+
+        # A pass@1 depressed by budget exhaustion measures budget fit, not
+        # capability. Ship the caveat with the number so the chart cannot be
+        # read as a capability claim (EXP-001 confound).
+        report = analyze(manifest["run_id"])
+        if report["budget_exhausted"]:
+            row["budget_exhausted"] = report["budget_exhausted"]
+            row["conditional_pass"] = round(report["conditional_pass"], 4)
         rows.append(row)
     return rows
 

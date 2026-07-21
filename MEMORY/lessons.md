@@ -1,5 +1,27 @@
 # Lessons learned
 
+## 2026-07-21 — A "matched" budget that binds on one arm is a confound
+
+EXP-001 gave both models `max_tokens=2048`, which looks like a fair control.
+It was slack for qwen2.5-coder (median 88 completion tokens, 0 truncations)
+and binding for qwen3 (median 1759, 42% truncated mid-reasoning). The raw
+28-point pass@1 gap measured *budget fit*, not coding ability — conditional
+on emitting code the ranking **reverses** (97.9% vs 85.4%).
+
+**Rule:** before reporting any matched-budget comparison, verify the
+constraint is slack for every arm. A binding constraint on one side is a
+treatment, not a control. Generalises to every budget knob this platform
+will use for ablations — tokens, iterations, wall-clock, tool calls.
+
+**Corollary on latency:** measure from recorded per-call `llm_latency_ms`,
+never wall-clock deltas. Wall clock implied 350 s/task for qwen3; summed
+call latency showed 4.77 h of work inside a 15.2 h window — the laptop idled
+overnight and the difference was pure artifact.
+
+Both bugs are the same family as [[extraction-as-instrumentation]] and the
+scored-artifact lesson below: **the measurement apparatus produces confident
+wrong numbers far more readily than obvious failures.**
+
 ## 2026-07-20 — A broken run must never produce a scored artifact
 
 The EXP-001 chain was scheduled to run `qwen3:8b` while that model was still

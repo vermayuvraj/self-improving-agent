@@ -14,6 +14,21 @@ window.SIA_RUNS = [
     ]
   },
   {
+    "run_id": "7656889d539c",
+    "date": "2026-07-20",
+    "bench": "humaneval",
+    "model": "qwen3:8b",
+    "pass1": 0.5732,
+    "tasks": 164,
+    "samples": 1,
+    "ci": [
+      0.4966,
+      0.6463
+    ],
+    "budget_exhausted": 68,
+    "conditional_pass": 0.9792
+  },
+  {
     "run_id": "b2e16d243112",
     "date": "2026-07-20",
     "bench": "mbpp",
