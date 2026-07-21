@@ -32,8 +32,9 @@ the model is nondeterministic.
 |----|------|----|--------------------|-----------|--------|--------|
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
+| EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
-| EXP-004 | 2026-07-22 | RQ1 | execution-feedback content beats blind resampling at matched budget; effect shrinks with scale | MBPP+ (primary) | — | pre-registered |
+| EXP-004 | 2026-07-22 | RQ1 | execution-feedback content beats blind resampling at matched budget; effect shrinks with scale | MBPP+ (primary) | **Refuted, sign reversed.** Blind resampling wins at every scale (−6.1/−4.2/−1.1 pp vs feedback) using ~half the tokens; feedback−placebo ≈ 0 everywhere. Knee at k≈2 (46–53% of gain). | ✅ closed |
 | EXP-003b | 2026-07-22 | — | smaller models give the headroom and a scale axis | HumanEval+/MBPP+ | 54.3→80.5% HumanEval+, 56.6→70.9% MBPP+; MBPP+ powered at every scale (110–164 failures), HumanEval+ at none | ✅ closed |
 
 ## EXP-003 — EvalPlus baseline + harness validation (2026-07-21)
@@ -158,7 +159,112 @@ quotes, so feedback could leak test content — inspected, since the model sees
 only *failing input/expected/actual*, which is legitimate execution feedback,
 but this is noted as a difference from settings where held-out tests exist.
 
-**Status.** Pre-registered; launching 2026-07-22.
+**Status.** ✅ Closed 2026-07-22.
+
+### Result: showing the model its own failed attempt *hurts*
+
+**Blind resampling beats both feedback conditions at every scale.** The
+headline is not "feedback fails to help" but the stronger and more surprising
+"conditioning on your own failed code is actively harmful, and the execution
+facts do not rescue it."
+
+pass@1 on MBPP+ (n=378), k = 0…8:
+
+| Model | Condition | k=0 | k=1 | k=2 | k=4 | k=8 | out-tokens |
+|---|---|---|---|---|---|---|---|
+| 1.5B | **resample** | .566 | .624 | .651 | .696 | **.749** | **63k** |
+| 1.5B | placebo | .566 | .616 | .646 | .669 | .688 | 90k |
+| 1.5B | feedback | .566 | .611 | .624 | .653 | .688 | 129k |
+| 3B | **resample** | .598 | .651 | .693 | .735 | **.778** | **76k** |
+| 3B | placebo | .598 | .646 | .661 | .685 | .709 | 89k |
+| 3B | feedback | .598 | .632 | .646 | .693 | .735 | 84k |
+| 7B | **resample** | .709 | .743 | .765 | .786 | **.820** | **49k** |
+| 7B | placebo | .709 | .738 | .759 | .778 | .802 | 59k |
+| 7B | feedback | .709 | .735 | .759 | .780 | .810 | 55k |
+
+Paired contrasts at k=8 (McNemar exact, bootstrap CI, **Holm-corrected**
+across the three primary contrasts):
+
+| Contrast | 1.5B | 3B | 7B |
+|---|---|---|---|
+| feedback − placebo | +0.000 [−.026,+.029] p=1.00 | +0.026 [−.003,+.056] p=0.49 | +0.008 [−.013,+.029] p=1.00 |
+| placebo − resample | **−0.061** [−.095,−.029] **p=0.003** | **−0.069** [−.103,−.037] **p=0.0006** | −0.019 [−.045,+.008] p=0.99 |
+| feedback − resample | **−0.061** [−.095,−.029] **p=0.004** | **−0.042** [−.071,−.013] **p=0.042** | −0.011 [−.040,+.016] p=1.00 |
+
+### Verdicts against the pre-registered hypotheses
+
+- **H1 (feedback > placebo): refuted.** Every CI includes zero at every
+  scale. This is exactly the pre-registered falsification criterion. The
+  execution facts — failing input, expected value, actual value — buy nothing
+  over a content-free "your solution was incorrect, try again."
+- **H2 (placebo > resample): refuted, with the sign reversed.** Placebo is
+  *significantly worse* than resample at 1.5B (−6.1 pp) and 3B (−6.9 pp).
+  Seeing your own failed attempt is harmful, not merely useless.
+- **H3 (gap shrinks with scale): supported.** `feedback − resample` is
+  −0.061 → −0.042 → −0.011 as scale grows, monotonically shrinking toward the
+  null the frontier-scale literature reports (arXiv:2606.26978's 1.25 pp,
+  n.s.). The direction of our effect is negative throughout, which the
+  hypothesis did not anticipate.
+- **H4 (early knee): supported.** 46–53% of all attainable gain arrives by
+  k=2 at every scale, with marginal gains decaying to ≈0 by k=7.
+
+### Cost: the feedback arms are dominated on both axes
+
+resample achieves the *best* pass rate using the *fewest* tokens — 63k vs
+feedback's 129k at 1.5B (2.05×), and fewer attempts overall (it exits early
+more often because it succeeds more). There is no cost/accuracy trade-off to
+navigate here: at these scales, on this task distribution, conditioning on
+the failed attempt is worse on both axes simultaneously.
+
+### Mechanism: anchoring, confirmed (EXP-005)
+
+Predicted before measuring: if conditioning on the failed attempt biases
+sampling toward minor edits, the feedback arms should show markedly *lower*
+inter-attempt diversity. Measured on the traces already collected (no new
+inference), as mean similarity between consecutive attempts:
+
+| Model | resample | placebo | feedback |
+|---|---|---|---|
+| 1.5B | 0.509 (5.2% near-identical) | 0.828 (45.6%) | 0.862 (**52.1%**) |
+| 3B | 0.418 (1.8%) | 0.756 (29.3%) | 0.795 (37.9%) |
+| 7B | 0.607 (13.7%) | 0.911 (67.8%) | 0.914 (**65.8%**) |
+
+The effect is large, consistent, and in the predicted direction at every
+scale (+0.30 to +0.38 similarity vs blind resampling). **Shown its own failed
+code, the model regenerates a near-identical solution between a third and two
+thirds of the time** — it edits rather than reconsiders. Blind resampling
+redraws from a genuinely different region of the solution space.
+
+This also explains H3's shrinking gap, which the hypothesis did not
+anticipate. Anchoring *strength* is roughly constant across scale (+0.30–0.38
+everywhere) — but its *cost* falls, because a larger model's failed first
+attempt is a better thing to anchor on. At 1.5B the initial approach is more
+often fundamentally wrong, so committing to it is expensive; at 7B it is
+usually close, so the penalty nearly vanishes. The scale trend is not
+feedback becoming more useful, it is anchoring becoming less harmful.
+
+### Threats, checked
+
+- **(a) Budget exhaustion: ruled out.** 0.0% truncation in all nine arms
+  (0 of 8,082 responses). The result is not budget-limited. This mattered:
+  the EXP-001 confound would have produced exactly this shape of result.
+- **(b) Unequal token spend across arms: real but favourable.** The winning
+  arm spends the least, so the finding cannot be explained by resample
+  receiving more compute.
+- **(c) Test leakage via feedback:** the model sees failing input / expected /
+  actual, which is legitimate execution feedback, but MBPP+ evaluates on the
+  same suite. Any leakage would *inflate* the feedback arm, so it cannot
+  explain feedback losing.
+
+### Relation to prior work
+
+This partially contradicts arXiv:2606.31511, which reports feedback content
+beating generic placebos on 0.5–1.5B models; we find that contrast
+indistinguishable from zero at 1.5B–7B. It is consistent with, and extends,
+arXiv:2606.26978: execution feedback is not worth its cost — and we add that
+at small scale it is worse than not looking at your own output at all. The
+blind-resampling control is what makes this visible; a study comparing only
+feedback against no-repair would have reported "repair helps" and stopped.
 
 ## EXP-003b — Model-scale baselines (2026-07-22)
 

@@ -1,5 +1,30 @@
 # Lessons learned
 
+## 2026-07-22 — The control decides what the experiment can conclude
+
+EXP-004's headline depends entirely on which baseline the treatment is
+compared against. Against *no repair*, feedback looks like a +12.2 pp win at
+1.5B and the write-up would have been "self-repair works." Against *blind
+resampling at matched budget*, the same data show feedback **losing by 6.1
+pp** while costing twice the tokens.
+
+Nothing about the treatment changed. The control changed, and the conclusion
+inverted.
+
+**Rules:**
+1. For any capability that adds context to a prompt, the control is not
+   "without the capability" — it is "with an equally expensive but
+   uninformative alternative." Otherwise the measurement captures the budget,
+   not the idea.
+2. When a result contradicts a pre-registered hypothesis, check the threats
+   *before* believing it (here: 0% truncation ruled out the EXP-001 confound),
+   then look for the mechanism. A mechanism that also explains an unexpected
+   secondary pattern — anchoring cost falling with scale explained H3's
+   shrinking gap — is much stronger evidence than the headline alone.
+3. Mechanism analyses are often already sitting in traces you have.
+   EXP-005 required no new inference, only reading what was recorded — which
+   is the payoff of [[trace-first design]].
+
 ## 2026-07-22 — A control that cannot vary is not a control
 
 The M3 repair loop initially inherited the project's greedy default

@@ -79,7 +79,24 @@ Turn one-off runs into experiments, and make effects measurable.
   per benchmark to ablate against.
 </details>
 
-## M3 — Self-debugging repair loop ⬜ (the core contribution)
+## M3 — Self-debugging repair loop ✅ (2026-07-22) — the core contribution
+
+Exit criteria met and then some. EXP-004 ran the full placebo-controlled
+grid; EXP-005 established the mechanism from the same traces.
+
+**Headline result: blind resampling beats conditioning on your own failed
+attempt, at every model scale, using roughly half the tokens.** H1 (feedback
+> placebo) is refuted — every CI includes zero. H2 (placebo > resample) is
+refuted with the sign reversed: −6.1 pp at 1.5B and −6.9 pp at 3B, both
+significant after Holm correction. The mechanism is anchoring: shown its own
+code, the model regenerates a near-identical solution 33–68% of the time
+versus 2–14% when resampling blind.
+
+This is the paper. A study comparing only *feedback vs no-repair* would have
+concluded "repair helps" and stopped; the blind-resampling control is what
+makes the real story visible.
+
+<details><summary>Original scope</summary>
 
 Execute → read failure → patch → re-run, k times. **Placebo-controlled**
 (design borrowed from arXiv:2606.31511, cited).
@@ -101,6 +118,17 @@ Conditions, all at matched output-token budget:
 - **RQ2:** can the agent predict failure before execution? (confidence calibration)
 - **Exit criteria:** k ∈ {0,1,2,4,8} × 4 conditions on HumanEval+/MBPP+ with
   cost curves and paired significance tests.
+</details>
+
+**Consequence for M5/M6.** Both were designed to add context to the prompt —
+retrieved past experience (M5), structured self-reflection (M6). EXP-004/005
+say that adding your own prior output to the prompt *costs* accuracy at these
+scales via anchoring. So both must now be tested against a blind-resample
+control of matched budget, not merely against a no-capability baseline, and
+the live question becomes whether retrieved *other-task* experience escapes
+the anchoring trap that own-attempt context falls into. M6 in particular is
+now largely answered in the negative already: reflection is own-output
+conditioning.
 
 ## M5 — Experience memory ⬜
 
