@@ -28,6 +28,46 @@ memory), Self-Refine, AlphaCodium (test-driven flow engineering),
 OpenHands (platform-scale, ~72% Verified), Agentless (pipeline), DGM reference
 implementation (github.com/jennyzzt/dgm).
 
+## Self-repair: what is already settled, and what is not (survey 2026-07-21)
+
+This is M3's literature check, done before implementation. Two recent papers
+bracket the question from opposite ends:
+
+**Small frozen models — feedback content does help.** *Falsification, Not
+Exposure* (arXiv:2606.31511) runs a **preregistered, placebo-controlled**
+decomposition on frozen 0.5–1.5B code models over **HumanEval+/MBPP+**. It
+separates the feedback packet into components and compares against
+(a) blind resampling at matched output budget and (b) content-free,
+shape-matched placebos. Result: code-plus-facts feedback recovers **+18 over
+bare code and +15 over generic placebos**, while *instruction-only* effects
+are indistinguishable from noise. Its contribution is explicitly methodological
+— making "feedback content works" falsifiable rather than assumed.
+
+**Frontier agents on repo tasks — execution barely helps.** *To Run or Not to
+Run* (arXiv:2606.26978) finds prohibiting code execution costs only **1.25 pp**
+resolve-rate (McNemar, p>0.05) while cutting tokens 56–62% and wall-clock
+48–54%. Diagnosis: 54–66% of cases need a single edit (the model is right
+first time), only 48.8% of reproduction executions yield actionable output,
+and 81–100% of failures pass the agent's own tests but fail official
+evaluation. Recommendation: treat execution as a costed resource, not a
+default.
+
+**The gap we take.** The two ends disagree, and neither maps the curve between
+them. Open: (i) the **7B function-level middle ground** — large enough to
+often be right first time, small enough that feedback might still pay;
+(ii) the **shape of the k-curve** — everyone reports a single iteration
+budget, nobody reports where the knee is; (iii) whether the placebo
+discipline survives being applied *consistently across capabilities*
+(repair, memory, reflection) rather than to one module in isolation. That
+third point is the paper's spine.
+
+**Methodological debts, cited not disguised:** the placebo/matched-budget
+design is adopted from arXiv:2606.31511; the "execution is a costed resource"
+framing from arXiv:2606.26978; pass@k from Chen et al. 2021; EvalPlus
+(HumanEval+/MBPP+, 80×/35× more tests) as the evaluation substrate, chosen
+both for rigour and because it is what the small-model repair work uses,
+making our numbers directly comparable.
+
 ## Our positioning
 
 The self-improvement papers demonstrate *that* agents can improve themselves
@@ -49,7 +89,7 @@ becomes a contribution rather than a threat to validity.
 
 | ID | Question | Milestone |
 |----|----------|-----------|
-| RQ1 | How does repair success scale with iteration count k; where is the cost/benefit knee? | M3 |
+| RQ1 | Where is the cost/benefit knee in repair iterations k, and does execution-feedback *content* beat blind resampling at matched budget for a 7B model? (Bracketed by arXiv:2606.31511 at 0.5–1.5B and arXiv:2606.26978 at frontier scale; middle unmeasured.) | M3 |
 | RQ2 | Can the agent predict failure before execution (confidence calibration)? | M3 |
 | RQ3 | Does explicit retrieval beat agent-driven grep at matched budget? | M4 |
 | RQ4 | Does cross-task experience memory improve success/cost? How should SE experience be represented (trajectory vs. lesson vs. skill)? | M5 |
@@ -73,6 +113,9 @@ used for routing; memory forgetting/consolidation policies.
 - [SWE-Exp: Experience-Driven Software Issue Resolution](https://arxiv.org/html/2507.23361v2)
 - [Agent Learning via Early Experience](https://arxiv.org/abs/2510.08558)
 - [Skywork-SWE: Data Scaling Laws for SWE in LLMs](https://arxiv.org/pdf/2506.19290)
+- [Falsification, Not Exposure: Placebo-Controlled Decomposition of Self-Repair Feedback in Frozen Small Code Models](https://arxiv.org/abs/2606.31511) — placebo design, HumanEval+/MBPP+
+- [To Run or Not to Run: Cost-Effectiveness of Code Execution in LLM-Based Program Repair](https://arxiv.org/html/2606.26978)
+- [EvalPlus (HumanEval+ / MBPP+)](https://evalplus.github.io/) — 80×/35× more tests
 
 Per-module literature reviews are done at the start of each milestone and
 recorded here; this section is the project-level map only.
