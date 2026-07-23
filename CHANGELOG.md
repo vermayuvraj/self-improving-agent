@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-07-22 — M2, M3, M5, M6 complete; paper draft assembled
+
+- **M2 experiment engine:** EvalPlus (HumanEval+/MBPP+) with differential
+  testing against a canonical oracle; TOML-spec grids run resumably via
+  `sia exp`; paired statistics (McNemar exact + bootstrap CI) because
+  ablation arms share a task set.
+- **M3 repair loop (the core result):** placebo-controlled, four conditions,
+  three scales. Blind resampling beats self-repair everywhere;
+  mechanism identified as anchoring (EXP-004/005/007).
+- **M5 memory:** BM25 retrieval over experience mined from our own traces.
+  A clean null — which is what isolates anchoring as self-specific (EXP-006).
+- **M6 reflection:** loosens the anchor most of any own-output condition and
+  performs best among them, yet still loses on cost (EXP-007).
+- Seven experiments closed, each pre-registered with hypotheses, decision
+  rules and falsification criteria fixed before running. Two returned
+  results that refuted their own primary hypotheses.
+- Four instrumentation bugs caught before they reached a result; all are
+  recorded in `MEMORY/lessons.md` as generalisable rules.
+
 ## 2026-07-21 — M1 complete: baseline agent + evaluation harness
 
 - `sia.llm` (provider-agnostic client, Ollama-backed), `sia.trace`

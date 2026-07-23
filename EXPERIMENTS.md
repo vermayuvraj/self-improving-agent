@@ -33,7 +33,7 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
-| EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | — | running |
+| EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | **Partially — and still loses.** Anchoring drops most of any own-output arm (−0.11/−0.04/−0.12 similarity vs feedback), and ranking tracks it exactly; but reflect still loses to resample at 1.5B (−6.1 pp, p=0.006) and ties at 7B for 2.5× the tokens. | ✅ closed |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
 | EXP-004 | 2026-07-22 | RQ1 | execution-feedback content beats blind resampling at matched budget; effect shrinks with scale | MBPP+ (primary) | **Refuted, sign reversed.** Blind resampling wins at every scale (−6.1/−4.2/−1.1 pp vs feedback) using ~half the tokens; feedback−placebo ≈ 0 everywhere. Knee at k≈2 (46–53% of gain). | ✅ closed |
@@ -117,7 +117,74 @@ anchoring measure (inter-attempt similarity) is also computed, since the
 mechanism predicts `reflect` should anchor *less* than `feedback` if it works
 at all.
 
-**Status.** Pre-registered; runs after EXP-006.
+**Status.** ✅ Closed 2026-07-22.
+
+### Result: reflection partially breaks the anchor — and still loses
+
+pass@1 at k=8 on MBPP+, with the other conditions for context:
+
+| Model | resample | placebo | feedback | **reflect** |
+|---|---|---|---|---|
+| 1.5B | **0.749** (63k tok) | 0.688 (90k) | 0.688 (129k) | 0.688 (**345k**) |
+| 3B | **0.778** (76k) | 0.709 (89k) | 0.735 (84k) | 0.743 (**284k**) |
+| 7B | 0.820 (49k) | 0.802 (59k) | 0.810 (55k) | **0.828** (**122k**) |
+
+Holm-corrected paired contrasts (now over five contrasts per model):
+
+| Contrast | 1.5B | 3B | 7B |
+|---|---|---|---|
+| reflect − feedback | +0.000 (p=1.00) | +0.008 (p=1.00) | +0.019 (p=1.00) |
+| reflect − resample | **−0.061 (p=0.006)** | −0.034 (p=0.60) | +0.008 (p=1.00) |
+
+- **H1 (reflect > feedback): not supported statistically.** The direction is
+  consistently positive (+0.000/+0.008/+0.019) and monotone in scale, but no
+  contrast survives correction.
+- **H2 (reflect > resample): refuted.** Reflection loses significantly to
+  blind resampling at 1.5B, loses non-significantly at 3B, and ties at 7B —
+  while costing **2.5–5.5× the output tokens**.
+
+### The mechanism prediction held: reflection anchors less
+
+Pre-registered: *"reflect should anchor less than feedback if it works at
+all."* Inter-attempt similarity (lower = more exploration):
+
+| Model | resample | feedback | **reflect** | reflect − feedback |
+|---|---|---|---|---|
+| 1.5B | 0.509 (5.2% near-identical) | 0.862 (52.1%) | 0.751 (34.8%) | **−0.111** |
+| 3B | 0.418 (1.8%) | 0.795 (37.9%) | 0.754 (28.4%) | −0.041 |
+| 7B | 0.607 (13.7%) | 0.914 (65.8%) | 0.793 (39.1%) | **−0.121** |
+
+**Reflection is the only own-output condition that meaningfully loosens the
+anchor** — near-identical regeneration falls by roughly a third (52%→35%,
+66%→39%). Verbal diagnosis does license abandoning a wrong approach, as
+hypothesised.
+
+But it loosens the anchor without escaping it: reflect still sits 0.19–0.34
+above blind resampling in similarity, and its ranking among the own-output
+conditions tracks that residual almost exactly — **reflect anchors least and
+performs best of the three, feedback anchors most and performs worst**. The
+mechanism predicts the outcome ordering quantitatively, which is stronger
+evidence for anchoring than the headline contrast alone.
+
+### The cost verdict is decisive even where accuracy ties
+
+At 7B, reflection's +0.8 pp over resampling is not significant and costs
+**2.5× the output tokens** (122k vs 49k). At 1.5B it is 5.5× the tokens for a
+significant *loss*. On a cost-adjusted basis reflection is dominated at every
+scale — there is no regime in this study where it is the right choice.
+
+**Threat check.** Reflection relaxes "no explanations", so responses are much
+longer; truncation was monitored and remained at 0% across all arms, so the
+result is not budget-limited. The extra tokens are spent on prose the model
+produces *before* the code, which is the intended cost of the condition.
+
+### Consequence for RQ5
+
+The pre-registered framing asked whether reflection beats *re-prompting with
+the failure log*. It does not, statistically. The more useful answer is the
+one the control set makes visible: **reflection is a partial and expensive
+mitigation of a problem best solved by not conditioning on your own output at
+all.**
 
 ## EXP-006 — Does *other-task* experience escape the anchoring trap? (pre-registered 2026-07-22)
 

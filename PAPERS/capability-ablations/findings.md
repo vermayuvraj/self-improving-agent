@@ -66,7 +66,32 @@ where exemplars teach an output convention. MBPP+ specifies its format in the
 prompt already. Claim is scoped to lexically-retrieved exemplars in
 small-model code synthesis.
 
-## Result 4 — the knee is early (EXP-004, H4)
+## Result 4 — reflection loosens the anchor but does not escape it (EXP-007)
+
+Reflexion-style verbal diagnosis added as a fourth condition.
+
+| Model | resample | feedback | reflect | reflect tokens |
+|---|---|---|---|---|
+| 1.5B | **0.749** | 0.688 | 0.688 | 5.5× resample |
+| 3B | **0.778** | 0.735 | 0.743 | 3.7× |
+| 7B | 0.820 | 0.810 | **0.828** | 2.5× |
+
+**The mechanism predicts the ordering.** Among own-output conditions,
+anchoring rank = performance rank, exactly inverted:
+
+| | similarity vs resample | pass@1 rank |
+|---|---|---|
+| feedback | +0.31 to +0.38 (most anchored) | worst |
+| placebo | +0.30 to +0.34 | middle |
+| reflect | **+0.19 to +0.34** (least anchored) | best |
+
+Verbal diagnosis does license abandoning a wrong approach — near-identical
+regeneration falls by about a third (7B: 66% → 39%). It is a partial,
+expensive mitigation of a problem better solved by not conditioning on your
+own output at all. Even where accuracy ties (7B, +0.8 pp n.s.), it costs
+2.5× the tokens.
+
+## Result 5 — the knee is early (EXP-004, H4)
 
 46–53% of all attainable gain arrives by k=2 at every scale; marginal gain
 decays to ≈0 by k=7. Practical implication: iteration budgets beyond ~2–3 buy

@@ -10,21 +10,25 @@ the problem — is a standard component of agentic coding systems, and is
 usually evaluated against a no-repair baseline. We show that this comparison
 is the wrong one. Across three model scales (1.5B/3B/7B, Qwen2.5-Coder) on
 MBPP+, we run a placebo-controlled ablation in which retry attempts receive
-either nothing, a content-free failure notice, or real execution feedback,
-all at a matched iteration budget and against a blind-resampling control.
-**Blind resampling wins at every scale, using roughly half the tokens.**
-Conditioning on the model's own failed attempt costs 6.1 points at 1.5B
-(p=0.003) and 4.2 points at 3B (p=0.042); execution-feedback content adds
-nothing over a content-free placebo anywhere. We identify the mechanism as
-**anchoring**: shown its own code, the model regenerates a near-identical
-solution 33–68% of the time, versus 2–14% when resampling blind. A
-complementary experiment shows retrieved *other-task* exemplars have no
+nothing, a content-free failure notice, real execution feedback, or feedback
+plus verbal self-reflection — all at a matched iteration budget and against a
+**blind-resampling control**. Blind resampling wins at every scale, using
+2.5–5.5× fewer tokens. Conditioning on the model's own failed attempt costs
+6.1 points at 1.5B (p=0.006) and 4.2 points at 3B; execution-feedback content
+adds nothing over a content-free placebo anywhere. We identify the mechanism
+as **anchoring**: shown its own code, the model regenerates a near-identical
+solution 33–68% of the time versus 2–14% when resampling blind. Two further
+experiments sharpen the claim. Retrieved *other-task* exemplars have no
 effect in either direction (all contrasts n.s., bounded to ±3.5 pp),
 establishing that the penalty is specific to self-conditioning rather than a
-general context-dilution effect. The anchoring penalty shrinks with scale
-(−6.1 → −4.2 → −1.1 pp), interpolating toward the null reported for frontier
-agents; we argue this reflects anchoring becoming *cheaper*, not feedback
-becoming useful.
+general context-dilution effect. And verbal reflection — the only condition
+that meaningfully loosens the anchor — reduces near-identical regeneration by
+about a third, yet still loses to resampling at small scale and merely ties
+at 7B for 2.5× the cost; **among own-output conditions, anchoring rank
+predicts performance rank exactly**. The penalty shrinks with scale (−6.1 →
+−4.2 → −1.1 pp), interpolating toward the null reported for frontier agents;
+we argue this reflects anchoring becoming *cheaper* — a larger model's failed
+attempt is a better thing to anchor on — not feedback becoming useful.
 
 ## 1. Introduction
 
@@ -36,10 +40,14 @@ Contributions:
 2. The finding that self-repair is *worse than retrying* below 7B, on both
    accuracy and cost.
 3. A mechanism — anchoring — measured directly from inter-attempt code
-   similarity, which also explains the scale trend.
+   similarity, which explains both the scale trend and the ordering of all
+   three own-output conditions.
 4. A null result on retrieved experience that isolates the mechanism as
-   self-specific.
-5. An open, reproducible harness that runs entirely on one consumer GPU.
+   self-specific rather than a generic long-prompt effect.
+5. A test of whether verbal reflection escapes the mechanism: it loosens the
+   anchor measurably but not enough to pay for itself.
+6. An open, reproducible harness that runs entirely on one consumer GPU, with
+   every experiment pre-registered before it was run.
 
 ## 2. Related work
 
@@ -109,9 +117,19 @@ Headline numbers in `findings.md`.
 The null bounds any memory effect to ±3.5 pp and, critically, shows the
 EXP-004 penalty is not a generic long-prompt effect.
 
-## 7. Threats to validity
+## 7. Reflection loosens the anchor but does not escape it (EXP-007)
 
-**7.1 Instrumentation bugs caught pre-registration.** Four measurement
+[Table: four conditions × scale, with token cost]
+[Figure 5: anchoring vs pass@1 scatter — the ordering result]
+
+The central observation: among the three own-output conditions, **anchoring
+rank inverts to performance rank exactly** (feedback most anchored / worst;
+reflect least anchored / best). A mechanism that predicts an ordering it was
+not fitted to is stronger evidence than the headline contrast alone.
+
+## 8. Threats to validity
+
+**8.1 Instrumentation bugs caught pre-registration.** Four measurement
 failures were found and fixed before they could reach a result, each of which
 would have produced a *plausible but wrong* number:
 (i) code extraction stripped leading indentation, invalidating
@@ -121,29 +139,39 @@ arm and not another, so a raw pass-rate gap measured budget fit rather than
 capability; (iv) greedy retries returned byte-identical solutions, which
 would have flattened every k-curve. Details in `MEMORY/lessons.md`.
 
-**7.2 Budget exhaustion.** 0.0% of 8,082 repair responses and 0 of all
-memory responses hit the token cap. No arm is budget-limited.
+**8.2 Budget exhaustion.** 0.0% of repair responses and 0 of all memory
+responses hit the token cap, including the much longer `reflect` arm. No arm
+is budget-limited.
 
-**7.3 Unequal token spend.** Arms differ in tokens because early exit on
+**8.3 Unequal token spend.** Arms differ in tokens because early exit on
 success is intended (cost is an outcome). The direction favours the losing
-arms: the winner spends the least.
+arms: the winner spends the least, by 2.5–5.5×.
 
-**7.4 Test leakage.** Feedback quotes failing inputs from the same suite used
+**8.4 Test leakage.** Feedback quotes failing inputs from the same suite used
 for scoring; any leakage would inflate the arm that lost. Memory retrieval
 was audited before running: 1.2–1.7% of exemplars exceed 0.8 similarity to
 the gold solution.
 
-**7.5 Scope.** One benchmark family, one model family, ≤7B, Q4 quantized,
+**8.5 Scope.** One benchmark family, one model family, ≤7B, Q4 quantized,
 function-level synthesis. The 7B result is consistent with frontier findings
 but we do not test frontier models. Retrieval is lexical BM25; a semantic
-retriever is untested.
+retriever is untested. Reflection uses one prompt formulation; a different
+phrasing might break the anchor further.
 
-## 8. Practical implications
+## 9. Practical implications
 
 At these scales, an agent that fails a test should **retry from scratch, not
 patch**. Iteration budgets beyond k≈2 buy little (46–53% of attainable gain
 arrives by k=2). Execution feedback should be treated as a costed resource
-with a demonstrated benefit, not a default.
+with a demonstrated benefit, not a default — and reflection, the most
+expensive option tested, is dominated at every scale.
+
+The broader methodological point: **for any capability that adds context to a
+prompt, the control must be an equally expensive but uninformative
+alternative**, not the absence of the capability. Against a no-repair
+baseline, feedback looks like a +12.2 pp win at 1.5B. Against blind
+resampling at matched budget it loses. Nothing about the treatment changed —
+only the control.
 
 ## Reproduction
 

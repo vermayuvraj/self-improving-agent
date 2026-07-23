@@ -5,13 +5,14 @@ window.SIA_DATA = {
   generated: "2026-07-20",
   repo: "https://github.com/vermayuvraj/self-improving-agent",
   status: {
-    milestone: "M3",
-    phase: "M3 complete — blind resampling beats self-repair at every scale; anchoring identified as the mechanism",
+    milestone: "Complete",
+    label: "All planned milestones closed",
+    phase: "7 pre-registered experiments · paper draft assembled",
   },
   stats: [
     { label: "Headline result", value: "−6.1 pp", note: "self-repair vs blind resampling, 1.5B (p=0.003)" },
     { label: "Anchoring effect", value: "+0.35", note: "inter-attempt similarity when shown own code" },
-    { label: "Experiments closed", value: "6", note: "EXP-001, 003, 003b, 004, 005, 006" },
+    { label: "Experiments closed", value: "7", note: "all pre-registered before running" },
     { label: "Tests passing", value: "104", note: "offline + network self-checks" },
   ],
   roadmap: [
@@ -20,7 +21,7 @@ window.SIA_DATA = {
     { id: "M2", title: "Experiment engine + measurable headroom", status: "done", detail: "EvalPlus integrated and validated against published numbers; TOML-spec grids run resumably via `sia exp` and emit paper-ready tables with paired statistics. Headroom secured via model scale rather than a benchmark swap." },
     { id: "M3", title: "Self-debugging repair loop", status: "done", detail: "Placebo-controlled across three model scales. Result: blind resampling beats conditioning on your own failed attempt at every scale, using roughly half the tokens. Mechanism identified as anchoring. Knee at k≈2." },
     { id: "M5", title: "Experience memory", status: "done", detail: "Episodic store mined from our own traces; each model retrieves from its own solved tasks. Result: a clean null bounded to ±3.5 pp — which isolates EXP-004's anchoring penalty as specific to self-conditioning rather than a general effect of longer prompts." },
-    { id: "M6", title: "Reflection", status: "active", detail: "Reflexion-style diagnosis step added to the repair harness. RQ5: does verbal reasoning break the anchor, or is reflection just more own-output conditioning?" },
+    { id: "M6", title: "Reflection", status: "done", detail: "Reflexion-style diagnosis added to the repair harness. It loosens the anchor most of any own-output condition (near-identical regeneration down ~a third) and performs best among them — yet still loses to blind resampling at 1.5B and merely ties at 7B for 2.5× the tokens." },
     { id: "Paper", title: "Paper 1", status: "planned", detail: "“What actually helps? Placebo-controlled ablations of coding-agent capabilities under matched budgets.”" },
     { id: "—", title: "Deferred to paper two", status: "planned", detail: "SWE-bench / repo understanding (blocked on the 4096-token context ceiling, not effort), multi-agent decomposition, self-improving scaffold loop." },
   ],
@@ -35,6 +36,16 @@ window.SIA_DATA = {
     { id: "RQ8", milestone: "—", text: "Do capability gains measured on small models transfer to frontier models, and vice versa?" },
   ],
   experiments: [
+    {
+      id: "EXP-007",
+      date: "2026-07-22",
+      title: "Does verbal reflection break the anchor?",
+      status: "closed",
+      benchmarks: "MBPP+ (378) × 3 model scales, k ≤ 8",
+      hypothesis: "H1: reflect > feedback — the verbal diagnosis step adds something. H2 (the real question): reflect > resample. EXP-004 predicts no, since reflection is still own-output conditioning; the open part is whether reasoning about *why* an approach failed licenses abandoning it. Pre-registered prediction: reflect should anchor LESS than feedback if it works at all.",
+      method: "One additional arm on the M3 harness: feedback plus 'first diagnose the failure in two or three sentences, then write a corrected version'. Everything before the trailing instruction is byte-identical to feedback, so the contrast isolates the reasoning step.",
+      result: "Partially — and it still loses. The mechanism prediction held: reflect is the only own-output condition that meaningfully loosens the anchor, cutting near-identical regeneration by about a third (7B: 66% → 39%). Correspondingly it performs best of the three. But it still loses to blind resampling at 1.5B (−6.1 pp, p=0.006) and merely ties at 7B (+0.8 pp, n.s.) for 2.5× the output tokens — 5.5× at 1.5B. Among own-output conditions, anchoring rank inverts to performance rank exactly, which is stronger evidence for the mechanism than the headline contrast alone.",
+    },
     {
       id: "EXP-006",
       date: "2026-07-22",

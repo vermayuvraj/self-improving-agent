@@ -17,7 +17,7 @@ RUNS = ROOT / "runs"
 CELLS = json.loads((ROOT / "experiments" / "EXP-004" / "cells.json").read_text(encoding="utf-8"))
 
 MODELS = ["qwen2.5-coder:1.5b-instruct", "qwen2.5-coder:3b-instruct", "qwen2.5-coder:7b"]
-CONDITIONS = ["resample", "placebo", "feedback"]
+CONDITIONS = ["resample", "placebo", "feedback", "reflect"]
 K_MAX = 8
 
 
@@ -125,7 +125,13 @@ def main() -> None:
     print("\n" + "=" * 78)
     print("PAIRED CONTRASTS AT k=8 (McNemar exact + bootstrap CI on difference)")
     print("=" * 78)
-    contrasts = [("feedback", "placebo"), ("placebo", "resample"), ("feedback", "resample")]
+    contrasts = [
+        ("feedback", "placebo"),
+        ("placebo", "resample"),
+        ("feedback", "resample"),
+        ("reflect", "feedback"),
+        ("reflect", "resample"),
+    ]
     raw: list[tuple[str, float]] = []
     detail = {}
     for model in MODELS:

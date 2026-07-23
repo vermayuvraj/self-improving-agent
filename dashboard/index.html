@@ -353,7 +353,7 @@
   document.getElementById("gh-link").href = D.repo;
   const badges = document.getElementById("badges");
   badges.innerHTML = `
-    <span class="badge"><span class="pulse"></span>${esc(D.status.milestone)} in progress</span>
+    <span class="badge"><span class="pulse"></span>${esc(D.status.label || D.status.milestone + " in progress")}</span>
     <span class="badge">${esc(D.status.phase)}</span>
     <span class="badge">Local-first · runs on one workstation</span>`;
 

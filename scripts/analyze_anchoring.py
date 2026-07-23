@@ -21,7 +21,7 @@ RUNS = ROOT / "runs"
 CELLS = json.loads((ROOT / "experiments" / "EXP-004" / "cells.json").read_text(encoding="utf-8"))
 
 MODELS = ["qwen2.5-coder:1.5b-instruct", "qwen2.5-coder:3b-instruct", "qwen2.5-coder:7b"]
-CONDITIONS = ["resample", "placebo", "feedback"]
+CONDITIONS = ["resample", "placebo", "feedback", "reflect"]
 
 
 def similarity(a: str, b: str) -> float:
@@ -72,7 +72,9 @@ def main() -> None:
     print("=" * 76)
     for model in MODELS:
         base = results[(model, "resample")]
-        deltas = " ".join(f"{c}={results[(model, c)] - base:+.3f}" for c in ("placebo", "feedback"))
+        deltas = " ".join(
+            f"{c}={results[(model, c)] - base:+.3f}" for c in CONDITIONS if c != "resample"
+        )
         print(f"{model:<30} resample={base:.3f}   {deltas}")
 
 

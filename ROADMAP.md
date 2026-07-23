@@ -130,7 +130,14 @@ the anchoring trap that own-attempt context falls into. M6 in particular is
 now largely answered in the negative already: reflection is own-output
 conditioning.
 
-## M5 — Experience memory ⬜
+## M5 — Experience memory ✅ (2026-07-22)
+
+EXP-006: a clean null, bounded to ±3.5 pp. Retrieved other-task exemplars
+neither help nor hurt at any scale — and that null is load-bearing, because
+it shows M3's anchoring penalty is specific to *self*-conditioning rather
+than a generic effect of longer prompts.
+
+<details><summary>Original scope</summary>
 
 The first self-improvement ingredient: learn across tasks, not within one.
 
@@ -142,13 +149,24 @@ The first self-improvement ingredient: learn across tasks, not within one.
 - **Exit criteria:** memory-on vs. memory-off ablation on a held-out task
   split, with the same placebo discipline as M3 (a content-free "memory" of
   matched length is the control).
+</details>
 
-## M6 — Reflection ⬜
+## M6 — Reflection ✅ (2026-07-22)
+
+EXP-007: reflection is the only own-output condition that measurably loosens
+the anchor (near-identical regeneration down ~a third), and correspondingly
+the best-performing of the three — but it still loses to blind resampling at
+1.5B (−6.1 pp, p=0.006) and merely ties at 7B for 2.5× the tokens. Among
+own-output conditions, **anchoring rank predicts performance rank exactly**,
+which is the strongest evidence in the project for the mechanism.
+
+<details><summary>Original scope</summary>
 
 - Post-failure structured reflection (Reflexion-style) as a toggle
 - **RQ5:** Does reflection help beyond simply re-running with the failure log
   in context? This control is missing in much of the literature, and M3's
   `feedback` condition *is* that control — so M6 is cheap once M3 exists.
+</details>
 
 ## M9 — Paper 1 ⬜
 
