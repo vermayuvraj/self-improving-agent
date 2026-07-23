@@ -70,9 +70,18 @@ def main() -> int:
     cells = json.loads(CELLS.read_text(encoding="utf-8")) if CELLS.exists() else {}
 
     def client() -> OpenAICompatClient:
-        # Long per-request timeout: free frontier endpoints can be slow, and
-        # the client already retries 429 rate-limit responses with backoff.
-        return OpenAICompatClient(model, base_url=base_url, api_key=key, timeout_s=180.0)
+        # Long timeout + patient retries: free tiers are slow and burst-limit
+        # (HTTP 429) aggressively. 8 retries at a 4s base delay rides out the
+        # per-10s window; the daily cap, if hit, surfaces as a terminal error
+        # and the run resumes tomorrow from cells.json.
+        return OpenAICompatClient(
+            model,
+            base_url=base_url,
+            api_key=key,
+            timeout_s=180.0,
+            max_retries=8,
+            retry_base_delay_s=4.0,
+        )
 
     # Probe with a real 1-token completion rather than the /models listing:
     # third-party endpoints list models inconsistently, but a live call
