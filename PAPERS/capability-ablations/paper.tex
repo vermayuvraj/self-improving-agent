@@ -412,12 +412,16 @@ anchors the model to a wrong approach. Retrieved other-task experience is a
 clean null, isolating the effect as self-specific; reflection mitigates it
 partially but is dominated on cost. Practically: a small-model agent that fails
 a test should retry from scratch, cap iterations near $k{\approx}2$, and treat
-feedback as a costed resource. Future work: a frontier-scale arm to locate
-where the penalty reaches parity---our monotone scale trend
-($-6.1 \to -4.2 \to -1.1$ pp) extrapolates to $\approx 0$ just beyond $7$B,
-and the harness is provider-agnostic and ready to run this on a free API tier;
-semantic (rather than lexical) retrieval; and distilled \emph{lessons} rather
-than raw exemplars as the memory representation.
+feedback as a costed resource. Future work: completing the larger-scale
+repair arm. We collected its baseline (Llama-3.3-70B, $\pass{=}0.704$ on
+MBPP+), which notably \emph{ties} the $7$B code specialist---raw scale without
+specialization does not improve first-attempt quality here, so this arm
+probes scale-at-similar-capability rather than scale-at-higher-capability.
+The repair contrast itself was blocked by hard free-tier daily \emph{token}
+caps ($100$k tokens/day), not by the harness, which is validated and
+provider-agnostic; a modest paid tier completes it in about an hour. Further
+directions: semantic (rather than lexical) retrieval, and distilled
+\emph{lessons} rather than raw exemplars as the memory representation.
 
 \paragraph{Reproducibility.}
 All experiments are pre-registered and reproducible from a single consumer GPU;

@@ -33,7 +33,7 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
-| EXP-008 | pre-registered | RQ8 | anchoring penalty vanishes at frontier scale | MBPP+ | — | pipeline ready, needs free API key |
+| EXP-008 | 2026-07-24 | RQ8 | anchoring penalty vanishes at frontier scale | MBPP+ | **Partial.** Baseline done: Llama-3.3-70B = 0.704, ties the 7B *specialist* (scale ≠ capability here). Repair arms blocked by hard free-tier daily-token caps (Groq 100k TPD, OpenRouter throttle). Needs paid tier or documented as future work. | ⚠ partial |
 | EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | **Partially — and still loses.** Anchoring drops most of any own-output arm (−0.11/−0.04/−0.12 similarity vs feedback), and ranking tracks it exactly; but reflect still loses to resample at 1.5B (−6.1 pp, p=0.006) and ties at 7B for 2.5× the tokens. | ✅ closed |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
@@ -134,18 +134,41 @@ confound and conflate scale with test-time reasoning). This makes EXP-008 a
 **larger-scale, different-family** point (31B instruct, ~4.4$\times$ the 7B
 top of our ladder), not a true frontier jump; reported as such.
 
-**Blocker: free-tier throughput, not code.** Measured directly: OpenRouter's
-free tier dynamically throttles — a single-stream burst saw ~1/6 calls
-HTTP 429; under sustained load it rose to ~2/3. A rigorous sweep is
-$\sim$1--2k calls; at the observed throttled rate this is many hours to over
-a day, and `usage_daily` stays 0 so it is rate-shaping, not a clean daily
-quota that would reset predictably. A backoff-cap bug was found and fixed in
-passing (`max_backoff_s`; uncapped $4\text{s}\times2^{7}\approx512$s per call
-turned throttling into multi-minute stalls). The run is resumable and will be
-executed once a viable endpoint is available — the leading free option is
-**Groq** (14{,}400 req/day, no card, much faster), or a small paid
-OpenRouter credit unlocks a higher tier. The paper's future-work section
-already frames this arm as pending.
+### Partial result: baseline complete, repair arms blocked by free-tier daily caps
+
+**Baseline (Llama-3.3-70B, MBPP+, greedy).** pass@1 = **0.704**
+[0.66, 0.75], n=378. Caveat: 6 tasks errored on rate limits and are counted
+as failures, so the true rate is 0.704–0.720. Used ~90k tokens.
+
+**Finding from the baseline alone (worth keeping):** a **70B generalist ties
+a 7B code specialist** on first-attempt MBPP+ quality (0.704 vs Qwen2.5-Coder
+-7B's 0.709). Raw scale without code-specialization does *not* improve
+first-attempt quality here — which reinforces the paper's "capability, not
+size" framing of the anchoring cost. It also means this arm, even if
+completed, would test scale-with-similar-capability, not
+scale-with-higher-capability.
+
+**Why the repair arms did not run: two hard free-tier walls, both measured.**
+- **OpenRouter free**: dynamic throttling — ~1/6 calls HTTP 429 on a light
+  burst, rising to ~2/3 under sustained load. Effective ~3 min/task; a
+  rigorous sweep would take over a day.
+- **Groq free**: a hard **100{,}000 tokens/day** cap on
+  `llama-3.3-70b-versatile` (confirmed from the 429 body:
+  `TPD Limit 100000, Used 99998`). The baseline alone consumed ~90k, so a
+  single repair arm (~300k+ tokens) cannot fit one daily budget; the full
+  three-arm sweep would need weeks of daily resets.
+
+A backoff-cap bug was found and fixed along the way (`max_backoff_s`; uncapped
+$4\text{s}\times2^{7}\approx512$s per call turned throttling into
+multi-minute stalls; now capped at 30s, with a regression test).
+
+**Conclusion.** A rigorous frontier repair contrast is not achievable on
+current free tiers within a reasonable timeframe — the daily *token* caps,
+not throughput, are the binding constraint. The pipeline, model choice, and
+analysis are all validated and staged; the arm needs either a small paid tier
+(a few dollars finishes it in ~1 hour) or is left as documented future work,
+which the paper's design already accommodates. The clean baseline datapoint
+is retained.
 
 ## EXP-007 — Does verbal reflection overcome anchoring? (pre-registered 2026-07-22)
 
