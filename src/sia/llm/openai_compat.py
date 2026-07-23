@@ -27,11 +27,13 @@ class OpenAICompatClient:
         timeout_s: float = 600.0,
         max_retries: int = 3,
         retry_base_delay_s: float = 1.0,
+        max_backoff_s: float = 30.0,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.model = model
         self._max_retries = max_retries
         self._retry_base_delay_s = retry_base_delay_s
+        self._max_backoff_s = max_backoff_s
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._client = httpx.Client(
             base_url=base_url,
@@ -83,7 +85,10 @@ class OpenAICompatClient:
         last_error: Exception | None = None
         for attempt in range(self._max_retries + 1):
             if attempt:
-                time.sleep(self._retry_base_delay_s * 2 ** (attempt - 1))
+                # Exponential backoff, capped: uncapped growth (e.g. base 4s,
+                # 8 retries) reaches ~500s per call, which turns a throttled
+                # free endpoint into a multi-minute-per-request stall.
+                time.sleep(min(self._max_backoff_s, self._retry_base_delay_s * 2 ** (attempt - 1)))
             start = time.perf_counter()
             try:
                 response = self._client.post("/chat/completions", json=payload)
