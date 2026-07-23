@@ -32,6 +32,8 @@ the model is nondeterministic.
 |----|------|----|--------------------|-----------|--------|--------|
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
+| EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
+| EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | — | running |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
 | EXP-004 | 2026-07-22 | RQ1 | execution-feedback content beats blind resampling at matched budget; effect shrinks with scale | MBPP+ (primary) | **Refuted, sign reversed.** Blind resampling wins at every scale (−6.1/−4.2/−1.1 pp vs feedback) using ~half the tokens; feedback−placebo ≈ 0 everywhere. Knee at k≈2 (46–53% of gain). | ✅ closed |
@@ -179,7 +181,79 @@ this is the likely explanation. (c) Store size differs by model (a stronger
 model has more experience); this is intrinsic to "own experience" and is
 reported, not corrected.
 
-**Status.** Pre-registered; launching 2026-07-22.
+**Status.** ✅ Closed 2026-07-22.
+
+### Result: a clean null — and that null is what makes EXP-004 interpretable
+
+pass@1 on MBPP+ (n=378, greedy), 95% Wilson CIs:
+
+| Model | `none` | `random` | `retrieved` |
+|---|---|---|---|
+| 1.5B | 0.566 [.516,.615] | 0.542 [.492,.592] | 0.542 [.492,.592] |
+| 3B | 0.598 [.548,.646] | 0.595 [.545,.644] | 0.606 [.556,.654] |
+| 7B | 0.709 [.661,.753] | 0.728 [.681,.770] | 0.696 [.648,.740] |
+
+**All nine paired contrasts are non-significant after Holm correction.**
+Every CI on the difference includes zero; the largest raw effect
+(7B `retrieved − random`, −0.032, raw p=0.050) does not survive correction.
+
+- **H1 (relevance) refuted.** `retrieved` − `random` is +0.000 / +0.011 /
+  −0.032 — no retrieval effect at any scale.
+- **H2 (few-shot) refuted.** `random` − `none` is −0.024 / −0.003 / +0.019.
+  Worked examples neither help nor hurt.
+- **H3 (anchoring is self-specific) supported.** `retrieved` is never
+  significantly below `none`.
+
+**Power.** With n=378 the CIs on differences are roughly ±0.035, so this
+rules out effects larger than ~3.5 pp in either direction. It is a bounded
+null, not an underpowered shrug — but it cannot exclude a genuine 1–2 pp
+gain.
+
+### Why this null matters: it isolates anchoring as *self*-specific
+
+Put beside EXP-004, the pair of results is sharper than either alone:
+
+| Context added to the prompt | Effect at 1.5B |
+|---|---|
+| The model's **own failed attempt** (EXP-004) | **−6.1 pp, p=0.003** |
+| **Other tasks' solved code** (EXP-006) | −2.4 pp, n.s. (CI spans 0) |
+
+Both add roughly comparable amounts of code to the context. If the EXP-004
+penalty were a general context-dilution or distraction effect, retrieved
+exemplars should have hurt similarly. They did not. **The damage is specific
+to conditioning on your own failed attempt**, which is exactly what the
+anchoring mechanism (EXP-005) predicts and what a generic "long prompts hurt
+small models" story does not.
+
+### Relation to prior work
+
+This contradicts the retrieval-augmented few-shot literature, which reports
+consistent gains from relevance-based exemplar selection (e.g. TF-IDF
+retrieval improving F1 by 6–9 points in biomedical NER; retrieval-augmented
+prompting beating random selection for vulnerability detection). Two honest
+differences: those are *classification/detection* tasks where exemplars teach
+an output convention, whereas MBPP+ tasks are self-contained function
+synthesis with the required format already specified in the prompt — there is
+less for an exemplar to teach. And our retriever is lexical BM25; a semantic
+retriever might find relations BM25 misses. **We claim a null for
+lexically-retrieved exemplars in small-model code generation, not a null for
+retrieval in general.**
+
+### Threats, checked
+
+- **Arms genuinely differed:** 0/378 prompts identical between `random` and
+  `retrieved` at every scale. (Outcomes coincide on 328–346 of 378 tasks
+  because most tasks are easy or hard regardless of context — which is why
+  the analysis is paired.)
+- **Truncation: zero** in all nine arms. Not a budget artifact.
+- **Leakage: audited before the run** — 1.2–1.7% of exemplars exceed 0.8
+  similarity to the gold solution. Any leakage would *inflate* the
+  `retrieved` arm, which did not win.
+
+**Future work.** Semantic retrieval, distilled *lessons* rather than raw
+solutions (RQ4's representation question is only partly answered — we tested
+one representation), and larger stores. The store here covers 57–71% of the
+benchmark; a store spanning many benchmarks might behave differently.
 
 ## EXP-004 — Does execution feedback content pay? (pre-registered 2026-07-22)
 

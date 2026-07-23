@@ -1,0 +1,11 @@
+{
+  "qwen2.5-coder:1.5b-instruct|mbpp+|none|k=0": "7ce4c1224d11",
+  "qwen2.5-coder:3b-instruct|mbpp+|none|k=0": "0b1aff369e5c",
+  "qwen2.5-coder:7b|mbpp+|none|k=0": "f0f2559baf8d",
+  "qwen2.5-coder:1.5b-instruct|mbpp+|random|k=0": "c7a98b050fc4",
+  "qwen2.5-coder:1.5b-instruct|mbpp+|retrieved|k=0": "27e6285c2e5e",
+  "qwen2.5-coder:3b-instruct|mbpp+|random|k=0": "05885d352a6c",
+  "qwen2.5-coder:3b-instruct|mbpp+|retrieved|k=0": "b7d2de8cc974",
+  "qwen2.5-coder:7b|mbpp+|random|k=0": "eea160432924",
+  "qwen2.5-coder:7b|mbpp+|retrieved|k=0": "9c7bbed3808a"
+}

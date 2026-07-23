@@ -45,7 +45,28 @@ the time, versus 2–14% blind.
 first attempt is a better thing to anchor on. The shrinking penalty at 7B is
 not feedback becoming useful — it is anchoring becoming cheap.
 
-## Result 3 — the knee is early (EXP-004, H4)
+## Result 3 — other-task memory does nothing, which isolates the mechanism (EXP-006)
+
+Retrieved solved exemplars from the model's own past: **all nine contrasts
+non-significant** after Holm correction, bounded to ±3.5 pp.
+
+| Context added | Effect at 1.5B |
+|---|---|
+| Own **failed** attempt (EXP-004) | **−6.1 pp, p=0.003** |
+| Other tasks' **solved** code (EXP-006) | −2.4 pp, n.s. |
+
+Both add comparable code to the context. A general context-dilution story
+predicts both should hurt; only self-conditioning does. **This null is what
+licenses the anchoring claim** — without it, EXP-004 is explainable as "long
+prompts hurt small models."
+
+Also a contradiction of the retrieval-augmented few-shot literature worth
+stating carefully: those gains are reported on classification/detection tasks
+where exemplars teach an output convention. MBPP+ specifies its format in the
+prompt already. Claim is scoped to lexically-retrieved exemplars in
+small-model code synthesis.
+
+## Result 4 — the knee is early (EXP-004, H4)
 
 46–53% of all attainable gain arrives by k=2 at every scale; marginal gain
 decays to ≈0 by k=7. Practical implication: iteration budgets beyond ~2–3 buy
