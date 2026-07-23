@@ -12,7 +12,7 @@ from pathlib import Path
 from sia.agent import solve_single_shot
 from sia.bench import BenchTask, build_execution, load_tasks, pass_at_k, wilson_ci
 from sia.bench.base import DEFAULT_DATA_DIR
-from sia.llm import LLMClient, LLMError
+from sia.llm import LLMClient, LLMError, Message
 from sia.parallel import default_workers, parallel_map
 from sia.sandbox import run_python
 from sia.trace import RunManifest, TraceWriter
@@ -46,6 +46,8 @@ def run_benchmark(
     data_dir: Path = DEFAULT_DATA_DIR,
     tasks: list[BenchTask] | None = None,
     workers: int | None = None,
+    message_builder: Callable[[BenchTask], list[Message]] | None = None,
+    extra_config: dict[str, object] | None = None,
     progress: Callable[[str], None] | None = None,
 ) -> RunSummary:
     """Run one agent configuration over a benchmark, emitting trace + manifest + results.
@@ -72,6 +74,7 @@ def run_benchmark(
         "max_tokens": max_tokens,
         "exec_timeout_s": exec_timeout_s,
         "agent": "single_shot",
+        **(extra_config or {}),
     }
     manifest = RunManifest(run_id=run_id, config=config, model=llm.model, seed=seed)
     manifest.save(run_dir / "manifest.json")
@@ -105,6 +108,7 @@ def run_benchmark(
                         temperature=temperature,
                         max_tokens=max_tokens,
                         seed=sample_seed,
+                        messages=message_builder(task) if message_builder else None,
                     )
                 except LLMError as exc:
                     with totals_lock:

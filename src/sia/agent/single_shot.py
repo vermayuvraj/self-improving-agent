@@ -20,9 +20,15 @@ def solve_single_shot(
     temperature: float = 0.0,
     max_tokens: int = 2048,
     seed: int | None = None,
+    messages: list[Message] | None = None,
 ) -> LLMResponse:
-    """One LLM call per task: instruction in, candidate solution out. Fully traced."""
-    messages = [Message("system", SYSTEM_PROMPT), Message("user", task.instruction)]
+    """One LLM call per task: instruction in, candidate solution out. Fully traced.
+
+    ``messages`` overrides the default prompt, so capability modules (M5
+    memory) can augment the context without duplicating the run loop.
+    """
+    if messages is None:
+        messages = [Message("system", SYSTEM_PROMPT), Message("user", task.instruction)]
     trace.event(
         "llm_call",
         task_id=task.task_id,

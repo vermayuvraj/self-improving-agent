@@ -50,9 +50,7 @@ def load_arm(run_id: str) -> dict:
     outcomes = {}
     for r in rows:
         passed_at = r["passed_at"]
-        outcomes[r["task_id"]] = [
-            any(passed_at[: k + 1]) for k in range(K_MAX + 1)
-        ]
+        outcomes[r["task_id"]] = [any(passed_at[: k + 1]) for k in range(K_MAX + 1)]
     return {
         "run_id": run_id,
         "manifest": manifest,
@@ -100,9 +98,7 @@ def main() -> None:
             a = arms[(model, cond)]
             rate = a["truncated"] / max(a["total_resp"], 1)
             worst = max(worst, rate)
-            print(
-                f"{model:<30} {cond:<10} {a['total_resp']:>10} {a['truncated']:>10} {rate:>6.1%}"
-            )
+            print(f"{model:<30} {cond:<10} {a['total_resp']:>10} {a['truncated']:>10} {rate:>6.1%}")
     verdict = "OK" if worst < 0.05 else "ARMS ARE BUDGET-LIMITED"
     print(f"\nworst truncation rate = {worst:.1%}  ->  {verdict}")
 
@@ -121,7 +117,9 @@ def main() -> None:
             ]
             tok = a["out_tokens"]
             print(
-                f"  {cond:<9} " + " ".join(f"{v:.3f}" for v in curve) + f"   [{tok/1000:.0f}k tok]"
+                f"  {cond:<9} "
+                + " ".join(f"{v:.3f}" for v in curve)
+                + f"   [{tok / 1000:.0f}k tok]"
             )
 
     print("\n" + "=" * 78)

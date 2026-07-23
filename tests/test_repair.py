@@ -74,6 +74,27 @@ def test_placebo_and_feedback_differ_only_by_facts():
         assert "incorrect" in body
 
 
+def test_reflect_asks_for_diagnosis_and_includes_facts():
+    """Reflection = feedback + an explicit verbal reasoning step."""
+    msgs = build_retry_messages(
+        TASK, "reflect", previous_code="def add(a,b): return a-b", failure="expected=3 actual=-1"
+    )
+    body = msgs[-1].content
+    assert "expected=3 actual=-1" in body  # has the facts, like feedback
+    assert "diagnose" in body.lower()  # plus the reasoning step
+    assert "def add(a,b): return a-b" in body
+
+
+def test_reflect_differs_from_feedback_only_by_the_reasoning_step():
+    common = {"previous_code": "code", "failure": "FACTS"}
+    f = build_retry_messages(TASK, "feedback", **common)[-1].content
+    r = build_retry_messages(TASK, "reflect", **common)[-1].content
+    assert "FACTS" in f and "FACTS" in r
+    assert "diagnose" not in f.lower()
+    # Everything before the trailing notice is identical.
+    assert f.split("Your previous solution")[0] == r.split("Your previous solution")[0]
+
+
 def test_all_conditions_keep_the_original_instruction():
     for condition in CONDITIONS:
         msgs = build_retry_messages(TASK, condition, previous_code="c", failure="f")

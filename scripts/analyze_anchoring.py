@@ -72,9 +72,7 @@ def main() -> None:
     print("=" * 76)
     for model in MODELS:
         base = results[(model, "resample")]
-        deltas = " ".join(
-            f"{c}={results[(model, c)] - base:+.3f}" for c in ("placebo", "feedback")
-        )
+        deltas = " ".join(f"{c}={results[(model, c)] - base:+.3f}" for c in ("placebo", "feedback"))
         print(f"{model:<30} resample={base:.3f}   {deltas}")
 
 

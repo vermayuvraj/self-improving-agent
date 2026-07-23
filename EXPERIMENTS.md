@@ -86,6 +86,101 @@ for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
 feedback the repair loop hands back to the model, so without the fix the
 `feedback` condition would have been silently starved of its signal.
 
+## EXP-007 — Does verbal reflection overcome anchoring? (pre-registered 2026-07-22)
+
+**RQ5.** Does structured self-reflection beat simply re-prompting with the
+failure log — and can it beat blind resampling?
+
+**Why the answer is partly predictable.** Reflection is own-output
+conditioning: the prompt contains the failed code, so EXP-005's anchoring
+mechanism applies. The open part is whether an explicit verbal diagnosis
+*breaks* the anchor — reasoning about *why* the approach failed could license
+abandoning it, which is exactly what the anchored arms fail to do.
+
+**Design.** One additional arm on the existing M3 harness: `reflect` =
+`feedback` + "first diagnose the failure in two or three sentences, then
+write a corrected version." Everything before the trailing instruction is
+byte-identical to `feedback`, so the contrast isolates the reasoning step.
+3 models × MBPP+ × k≤8, same baselines, same seeds, temperature 0.8.
+
+**Hypotheses.**
+- **H1.** `reflect` > `feedback` — the verbal step adds something.
+- **H2 (the real question).** `reflect` > `resample`. EXP-004 predicts *no*:
+  anchoring should dominate. If reflection *does* beat resampling, verbal
+  reasoning breaks the anchor and the M3 conclusion needs qualifying.
+
+**Predicted secondary effect.** `reflect` relaxes "no explanations", so
+responses are longer and truncation risk rises. Monitored per arm; the
+anchoring measure (inter-attempt similarity) is also computed, since the
+mechanism predicts `reflect` should anchor *less* than `feedback` if it works
+at all.
+
+**Status.** Pre-registered; runs after EXP-006.
+
+## EXP-006 — Does *other-task* experience escape the anchoring trap? (pre-registered 2026-07-22)
+
+**RQ4.** Does cross-task experience memory improve success, and is any gain
+from the *relevance* of what is retrieved or merely from having worked
+examples in context?
+
+**Why this follows from EXP-004/005.** Own-attempt context *costs* accuracy
+via anchoring. Retrieved experience is also context — but from other,
+*solved* tasks, so it carries no failed attempt to anchor on. This is the
+sharpest remaining question in the project: is the anchoring penalty specific
+to self-conditioning, or does any added context hurt at these scales?
+
+**Design.** Each model retrieves from **its own** solved MBPP+ tasks (mined
+from its EXP-003b baseline trace) — experience memory in the self-improvement
+sense, not cross-model distillation. Leave-one-out: a task never retrieves
+itself. k=2 exemplars, BM25 lexical retrieval, greedy decoding to match the
+existing baseline exactly (so the `none` arm is the EXP-003b run, free).
+
+| Condition | Prompt | Isolates |
+|---|---|---|
+| `none` | task only | baseline (reuses EXP-003b) |
+| `random` | + 2 arbitrary solved tasks | value of *any* worked examples |
+| `retrieved` | + 2 most similar solved tasks | value of *relevance* |
+
+`none → random` is the few-shot effect; `random → retrieved` is the retrieval
+effect. Both memory arms share format, exemplar count, and comparable length,
+so a difference between them cannot be a prompt-length artifact.
+
+**Hypotheses, fixed before running.**
+- **H1 (retrieval).** `retrieved` > `random` — relevance matters. The
+  few-shot literature reports this consistently (e.g. TF-IDF retrieval
+  +6–9 F1 in comparable settings), so a null here would be the surprise.
+- **H2 (few-shot).** `random` > `none` — worked examples help even when
+  irrelevant.
+- **H3 (anchoring is self-specific).** `retrieved` ≥ `none` at every scale:
+  other-task context does *not* incur the anchoring penalty that own-attempt
+  context does (EXP-004).
+
+**Analysis.** Paired McNemar exact + bootstrap CI, Holm-corrected over the
+three primary contrasts, α=0.05.
+
+**Falsification.** H3 is refuted if `retrieved` < `none` significantly. That
+would be the stronger and more interesting result: added context *per se*
+hurts small models, and EXP-004's anchoring finding is a special case of a
+general context-dilution effect rather than a self-conditioning effect.
+
+**Leakage audit, run before the experiment.** Retrieval over a benchmark that
+also supplies the eval tasks is only legitimate under leave-one-out, and
+near-duplicate tasks can still hand the model its answer. Measured similarity
+between each retrieved exemplar's code and the query task's gold solution:
+mean 0.38–0.39, p95 0.69–0.71, and **only 1.2–1.7% of exemplars exceed 0.8**.
+Low enough not to drive a result, but non-zero and reported rather than
+assumed away. Store coverage: 214/226/268 of 378 tasks (1.5B/3B/7B) — each
+model's memory is exactly what it could actually solve.
+
+**Threats.** (a) Longer prompts raise truncation risk on a 4096-token
+context; `budget_exhausted` monitored per arm. (b) Exemplars consume context
+the model might use for reasoning — a real mechanism, and if `random` loses
+this is the likely explanation. (c) Store size differs by model (a stronger
+model has more experience); this is intrinsic to "own experience" and is
+reported, not corrected.
+
+**Status.** Pre-registered; launching 2026-07-22.
+
 ## EXP-004 — Does execution feedback content pay? (pre-registered 2026-07-22)
 
 **RQ1.** Where is the cost/benefit knee in repair iterations *k*, and does
