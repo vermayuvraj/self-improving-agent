@@ -19,6 +19,12 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.8",
 ]
+# Figure generation for the paper — kept out of the core deps so the agent
+# and benchmark harness stay dependency-light.
+paper = [
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.25,<0.12.0"]
