@@ -11,16 +11,16 @@ window.SIA_DATA = {
   stats: [
     { label: "Headline result", value: "−6.1 pp", note: "self-repair vs blind resampling, 1.5B (p=0.003)" },
     { label: "Anchoring effect", value: "+0.35", note: "inter-attempt similarity when shown own code" },
-    { label: "Milestones complete", value: "4 / 6", note: "M0–M3 done; M5, M6 + paper remain" },
-    { label: "Tests passing", value: "86", note: "offline + network self-checks" },
+    { label: "Experiments closed", value: "6", note: "EXP-001, 003, 003b, 004, 005, 006" },
+    { label: "Tests passing", value: "104", note: "offline + network self-checks" },
   ],
   roadmap: [
     { id: "M0", title: "Foundation", status: "done", detail: "Repo, management docs, literature grounding, ADR-0001–0006." },
     { id: "M1", title: "Minimal baseline agent + fast eval loop", status: "done", detail: "LLM client, sandbox, trace logging, HumanEval/MBPP harness, single-shot baseline, CLI. EXP-001 selected qwen2.5-coder:7b as the development default." },
     { id: "M2", title: "Experiment engine + measurable headroom", status: "done", detail: "EvalPlus integrated and validated against published numbers; TOML-spec grids run resumably via `sia exp` and emit paper-ready tables with paired statistics. Headroom secured via model scale rather than a benchmark swap." },
     { id: "M3", title: "Self-debugging repair loop", status: "done", detail: "Placebo-controlled across three model scales. Result: blind resampling beats conditioning on your own failed attempt at every scale, using roughly half the tokens. Mechanism identified as anchoring. Knee at k≈2." },
-    { id: "M5", title: "Experience memory", status: "planned", detail: "Episodic store mined from our own traces, retrieved into new tasks. RQ4: does cross-task memory pay, against a content-free control of matched length?" },
-    { id: "M6", title: "Reflection", status: "planned", detail: "Reflexion-style toggle. RQ5: does structured reflection beat simply re-prompting with the failure log? M3's feedback arm is that control." },
+    { id: "M5", title: "Experience memory", status: "done", detail: "Episodic store mined from our own traces; each model retrieves from its own solved tasks. Result: a clean null bounded to ±3.5 pp — which isolates EXP-004's anchoring penalty as specific to self-conditioning rather than a general effect of longer prompts." },
+    { id: "M6", title: "Reflection", status: "active", detail: "Reflexion-style diagnosis step added to the repair harness. RQ5: does verbal reasoning break the anchor, or is reflection just more own-output conditioning?" },
     { id: "Paper", title: "Paper 1", status: "planned", detail: "“What actually helps? Placebo-controlled ablations of coding-agent capabilities under matched budgets.”" },
     { id: "—", title: "Deferred to paper two", status: "planned", detail: "SWE-bench / repo understanding (blocked on the 4096-token context ceiling, not effort), multi-agent decomposition, self-improving scaffold loop." },
   ],
@@ -35,6 +35,16 @@ window.SIA_DATA = {
     { id: "RQ8", milestone: "—", text: "Do capability gains measured on small models transfer to frontier models, and vice versa?" },
   ],
   experiments: [
+    {
+      id: "EXP-006",
+      date: "2026-07-22",
+      title: "Does other-task experience escape the anchoring trap?",
+      status: "closed",
+      benchmarks: "MBPP+ (378) × 3 model scales × 3 conditions",
+      hypothesis: "H1: retrieved > random (relevance matters). H2: random > none (worked examples help). H3: retrieved ≥ none — other-task context does not incur the anchoring penalty that own-attempt context does.",
+      method: "Each model retrieves from its OWN solved tasks, mined from its baseline trace — experience memory, not cross-model distillation. Leave-one-out, k=2 exemplars, BM25 lexical retrieval, greedy decoding matching the baseline exactly. none → random isolates the few-shot effect; random → retrieved isolates relevance. Leakage audited before the run.",
+      result: "A CLEAN NULL. All nine paired contrasts non-significant after Holm correction; every CI on the difference includes zero, bounding any effect to ±3.5 pp. H1 and H2 refuted, H3 supported. This null is what makes EXP-004 interpretable: own failed code costs 6.1 pp (p=0.003) while other-task solved code costs nothing, so the damage is specific to self-conditioning rather than a general context-dilution effect. Contradicts the retrieval-augmented few-shot literature, but that work is on classification tasks where exemplars teach an output convention; MBPP+ specifies its format already.",
+    },
     {
       id: "EXP-004 / EXP-005",
       date: "2026-07-22",

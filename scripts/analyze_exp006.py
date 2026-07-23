@@ -49,7 +49,8 @@ def main() -> None:
     reports = {}
     for model in MODELS:
         for cond in CONDITIONS:
-            reports[(model, cond)] = analyze_run(CELLS[f"{model}|{BENCH}|{cond}|k=0"], runs_dir=RUNS)
+            run_id = CELLS[f"{model}|{BENCH}|{cond}|k=0"]
+            reports[(model, cond)] = analyze_run(run_id, runs_dir=RUNS)
 
     print("=" * 76)
     print("SANITY: are the random and retrieved arms actually different runs?")
