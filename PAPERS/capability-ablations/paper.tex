@@ -390,8 +390,11 @@ scoring suite, so any leakage would inflate the arm that lost.
 \paragraph{Scope.}
 One benchmark family, one model family, $\le 7$B, $Q4$ quantized, function-level
 synthesis. The $7$B result is consistent with reports at frontier scale but we
-do not test frontier models; retrieval is lexical BM25; reflection uses one
-prompt formulation.
+do not test frontier models here; retrieval is lexical BM25; reflection uses
+one prompt formulation. The most direct extension is a frontier-scale point on
+the same ladder, for which the harness is provider-agnostic and ready; our
+scale trend predicts the penalty reaches parity there (see
+\S\ref{sec:conclusion}).
 
 \paragraph{The methodological point.}
 For any capability that adds context to a prompt, the control must be an
@@ -409,10 +412,12 @@ anchors the model to a wrong approach. Retrieved other-task experience is a
 clean null, isolating the effect as self-specific; reflection mitigates it
 partially but is dominated on cost. Practically: a small-model agent that fails
 a test should retry from scratch, cap iterations near $k{\approx}2$, and treat
-feedback as a costed resource. Future work: a frontier-scale arm to test
-whether anchoring vanishes as predicted, semantic (rather than lexical)
-retrieval, and distilled \emph{lessons} rather than raw exemplars as the memory
-representation.
+feedback as a costed resource. Future work: a frontier-scale arm to locate
+where the penalty reaches parity---our monotone scale trend
+($-6.1 \to -4.2 \to -1.1$ pp) extrapolates to $\approx 0$ just beyond $7$B,
+and the harness is provider-agnostic and ready to run this on a free API tier;
+semantic (rather than lexical) retrieval; and distilled \emph{lessons} rather
+than raw exemplars as the memory representation.
 
 \paragraph{Reproducibility.}
 All experiments are pre-registered and reproducible from a single consumer GPU;

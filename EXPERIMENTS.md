@@ -33,6 +33,7 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
+| EXP-008 | pre-registered | RQ8 | anchoring penalty vanishes at frontier scale | MBPP+ | — | pipeline ready, needs free API key |
 | EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | **Partially — and still loses.** Anchoring drops most of any own-output arm (−0.11/−0.04/−0.12 similarity vs feedback), and ranking tracks it exactly; but reflect still loses to resample at 1.5B (−6.1 pp, p=0.006) and ties at 7B for 2.5× the tokens. | ✅ closed |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
 | EXP-003 | 2026-07-21 | — | EvalPlus baseline + harness validation | HumanEval+/MBPP+ | 80.5% / 70.9%, within 0.8–3.6 pts of published; MBPP+ has usable headroom, HumanEval+ does not | ✅ closed |
@@ -87,6 +88,47 @@ Baselines for 1.5B/3B are being collected as EXP-003b.
 for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
 feedback the repair loop hands back to the model, so without the fix the
 `feedback` condition would have been silently starved of its signal.
+
+## EXP-008 — Does the anchoring penalty vanish at frontier scale? (pre-registered 2026-07-23)
+
+**RQ8 / the reviewer's first question.** EXP-004 found the
+`feedback − resample` gap shrinks monotonically with scale (−6.1 → −4.2 →
+−1.1 pp for 1.5B → 3B → 7B). The mechanism (EXP-005) attributes this to
+anchoring becoming *cheaper* as a model's first attempt gets better, not to
+feedback becoming useful. Both accounts predict the same thing at frontier
+scale, which is the clean test: **does self-repair reach parity with — or
+finally beat — blind resampling once the model is strong enough?**
+
+**Design.** Identical harness to EXP-004, one added scale point via a
+free OpenAI-compatible endpoint (OpenRouter `:free` / Gemini / Groq — the
+client is provider-agnostic). MBPP+, k≤8, temperature 0.8 on retries.
+Conditions: `resample`, `feedback`, `reflect` (placebo dropped to conserve
+rate-limited budget; `resample` vs `feedback` is the load-bearing contrast,
+and `reflect` tests whether reasoning that failed to pay below 7B pays here).
+
+**Hypotheses, fixed before running.**
+- **H1.** `feedback − resample` at k=8 is **not significantly negative** at
+  frontier scale (the penalty has vanished). Predicted by the scale trend.
+- **H2 (mechanism).** Inter-attempt similarity for `feedback` sits closer to
+  `resample` than it does at 7B — i.e. a stronger model anchors on a *better*
+  attempt, so the same anchoring strength costs less.
+- **H3.** If instead `feedback` significantly *beats* `resample`, the
+  small-model story does not extrapolate and the anchoring account needs a
+  scale boundary — a genuine finding either way.
+
+**Analysis.** Same paired McNemar + bootstrap CI; this arm slots into
+`scripts/analyze_exp004.py` and `make_figures.py` as a fourth model column.
+
+**Threats.** (a) A different model *family* confounds scale with
+architecture; prefer a `:free` Qwen3-Coder so it extends our own ladder.
+(b) Free-tier rate limits force low concurrency and long wall-time; the
+client retries 429s with backoff, and the run is resumable, so this costs
+time not validity. (c) Some free endpoints are quantized or throttled
+differently than a first-party API; recorded, not corrected.
+
+**Status.** Pipeline built and validated end-to-end against a local
+OpenAI-compatible endpoint (`scripts/run_frontier.py`). Blocked only on a
+free API key, which the endpoint operator (not the agent) must create.
 
 ## EXP-007 — Does verbal reflection overcome anchoring? (pre-registered 2026-07-22)
 
