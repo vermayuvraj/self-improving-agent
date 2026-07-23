@@ -126,9 +126,26 @@ client retries 429s with backoff, and the run is resumable, so this costs
 time not validity. (c) Some free endpoints are quantized or throttled
 differently than a first-party API; recorded, not corrected.
 
-**Status.** Pipeline built and validated end-to-end against a local
-OpenAI-compatible endpoint (`scripts/run_frontier.py`). Blocked only on a
-free API key, which the endpoint operator (not the agent) must create.
+**Status (2026-07-24).** Pipeline built and validated end-to-end. Model
+chosen: **`google/gemma-4-31b-it:free`** — the only *non-reasoning* option in
+the current OpenRouter free lineup (Nemotron-550B and gpt-oss-20b both emit
+hidden reasoning tokens, which would re-introduce the EXP-001 truncation
+confound and conflate scale with test-time reasoning). This makes EXP-008 a
+**larger-scale, different-family** point (31B instruct, ~4.4$\times$ the 7B
+top of our ladder), not a true frontier jump; reported as such.
+
+**Blocker: free-tier throughput, not code.** Measured directly: OpenRouter's
+free tier dynamically throttles — a single-stream burst saw ~1/6 calls
+HTTP 429; under sustained load it rose to ~2/3. A rigorous sweep is
+$\sim$1--2k calls; at the observed throttled rate this is many hours to over
+a day, and `usage_daily` stays 0 so it is rate-shaping, not a clean daily
+quota that would reset predictably. A backoff-cap bug was found and fixed in
+passing (`max_backoff_s`; uncapped $4\text{s}\times2^{7}\approx512$s per call
+turned throttling into multi-minute stalls). The run is resumable and will be
+executed once a viable endpoint is available — the leading free option is
+**Groq** (14{,}400 req/day, no card, much faster), or a small paid
+OpenRouter credit unlocks a higher tier. The paper's future-work section
+already frames this arm as pending.
 
 ## EXP-007 — Does verbal reflection overcome anchoring? (pre-registered 2026-07-22)
 
