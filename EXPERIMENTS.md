@@ -89,6 +89,76 @@ for M3 — that stdout diagnostic (failing input, expected vs actual) *is* the
 feedback the repair loop hands back to the model, so without the fix the
 `feedback` condition would have been silently starved of its signal.
 
+## EXP-009 — Is the anchoring penalty a quantization artifact? (pre-registered 2026-07-24)
+
+**Motivation (external review).** Every result to date uses $Q4\_K\_M$
+weights. Quantization is documented to degrade *in-context learning* more than
+unconditional generation, and the conditions we find wanting (`placebo`,
+`feedback`) are exactly those that place extra material in context. So the
+penalty could in principle be precision loss rather than anchoring. This is
+the strongest objection raised against the paper and it is directly testable.
+
+**Design.** Exact replication of the EXP-004 decomposition at the scale where
+the effect is largest, with the *only* change being precision:
+`qwen2.5-coder:1.5b-instruct-fp16` (~3.1 GB, fits 6 GB VRAM fully, so no CPU
+spill) versus the existing $Q4$ 1.5B arms. MBPP+, k≤8, temperature 0.8 on
+retries, seed 7 — identical harness, identical prompts. Conditions:
+`resample`, `placebo`, `feedback` (reflect omitted; it is secondary and the
+objection concerns feedback).
+
+**Hypotheses, fixed before running.**
+- **H1 (the load-bearing one).** The penalty survives at FP16:
+  `feedback − resample` remains significantly negative at 1.5B. If so,
+  quantization is excluded as the cause.
+- **H2.** `feedback − placebo` remains null at FP16, i.e. execution-feedback
+  content still adds nothing.
+- **H3 (mechanism).** Inter-attempt similarity remains far higher for
+  own-output conditions than for `resample` (the $\approx{+}0.3$ gap). This
+  measure has no obvious precision dependence, so a large change here would
+  itself be informative.
+
+**Falsification.** If `feedback − resample` is null or positive at FP16 while
+being $-6.1$ pp at $Q4$, the headline result is a quantization artifact and
+the paper's central claim must be restricted to quantized deployment. That
+would be a major revision, and we would report it.
+
+**Status.** Pre-registered; launching 2026-07-24.
+
+## EXP-010 — Does anchoring generalize beyond the Qwen family? (pre-registered 2026-07-24)
+
+**Motivation (external review).** All models are Qwen2.5-Coder, so the effect
+may reflect one pre-training distribution rather than small code models
+generally.
+
+**Design.** Replicate the decomposition on an independent family at the scale
+where our effect is strongest: **`deepseek-coder:1.3b-instruct`** (different
+lab, different pre-training corpus, different tokenizer) against
+`qwen2.5-coder:1.5b-instruct`. MBPP+, k≤8, same harness, seed 7. Conditions:
+`resample`, `placebo`, `feedback`. We deliberately replicate at ~1.3--1.5B
+rather than 7B because that is where the Qwen penalty is largest ($-6.1$ pp)
+and therefore where a family-specific artifact would be most visible; a null
+at 7B would be uninformative since the Qwen penalty is already null there.
+
+**Hypotheses.**
+- **H1.** `feedback − resample` is significantly negative for DeepSeek too,
+  i.e. the penalty is not Qwen-specific.
+- **H2.** Inter-attempt similarity for own-output conditions exceeds
+  `resample` by a comparable margin.
+- **H3.** A materially *lower* baseline for DeepSeek is expected and is not a
+  confound: contrasts are within-model and paired.
+
+**Falsification.** If DeepSeek shows no penalty, the claim narrows to the Qwen
+family and the paper must say so in the title and abstract.
+
+**Threats (both experiments).** (a) FP16 at 1.5B changes memory layout and may
+change throughput; latency is reported but is not the outcome. (b) DeepSeek's
+instruction format differs; we keep our prompt identical rather than tuning
+per model, which is conservative — a tuned prompt could only help the
+own-output arms we expect to lose. (c) Both are single-seed like the rest of
+the study.
+
+**Status.** Pre-registered; launching 2026-07-24.
+
 ## EXP-008 — Does the anchoring penalty vanish at frontier scale? (pre-registered 2026-07-23)
 
 **RQ8 / the reviewer's first question.** EXP-004 found the
