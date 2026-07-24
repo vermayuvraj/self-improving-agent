@@ -206,7 +206,28 @@ per model, which is conservative — a tuned prompt could only help the
 own-output arms we expect to lose. (c) Both are single-seed like the rest of
 the study.
 
-**Status.** Pre-registered; launching 2026-07-24.
+### Amendment, logged 2026-07-24 *before* any repair contrast was observed
+
+DeepSeek-Coder-1.3B-instruct's baseline came in at **0.201** on MBPP+, far
+below Qwen2.5-Coder-1.5B's 0.566. This is a design weakness we did not
+anticipate sharply enough: at that baseline the arm varies *family* and
+*capability* together, so a null result could not be attributed to family
+alone — the model might simply be too weak for any conditioning to matter.
+
+We therefore add **`deepseek-coder:6.7b-instruct`** as a capability-matched
+comparator (expected baseline in the range of our Qwen 3B/7B arms) and will
+report both. The 1.3B arm is retained: it has high power (302 failing tasks)
+and speaks to the small-model regime, but it is not the capability-matched
+test and will not be presented as one.
+
+**Integrity note.** This amendment was made after observing the *baseline*
+only. The baseline is not the outcome of interest; the pre-registered outcome
+is the `feedback − resample` contrast, which was unobserved at the time of
+this decision. The amendment addresses a confound in the design rather than an
+unwelcome result, and is logged here rather than folded silently into the
+method.
+
+**Status.** 1.3B arms running; 6.7B comparator queued.
 
 ## EXP-008 — Does the anchoring penalty vanish at frontier scale? (pre-registered 2026-07-23)
 
