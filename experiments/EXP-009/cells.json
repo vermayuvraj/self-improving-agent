@@ -1,0 +1,6 @@
+{
+  "qwen2.5-coder:1.5b-instruct-fp16|mbpp+|none|k=0": "d655c8deae7e",
+  "qwen2.5-coder:1.5b-instruct-fp16|mbpp+|resample|k=8": "ee96e40891ef",
+  "qwen2.5-coder:1.5b-instruct-fp16|mbpp+|placebo|k=8": "2b4e92ef486a",
+  "qwen2.5-coder:1.5b-instruct-fp16|mbpp+|feedback|k=8": "04adddeb836f"
+}

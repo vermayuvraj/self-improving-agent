@@ -33,6 +33,8 @@ the model is nondeterministic.
 | EXP-001 | 2026-07-20 | — | code-specialized 7B ≥ general 8B on code benchmarks | HumanEval + MBPP | Supported at matched budget (85.4% vs 57.3%), but **reversed** conditional on emitting code (85.4% vs 97.9%) — budget was binding for one arm only | ✅ closed |
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
+| EXP-009 | 2026-07-24 | — | anchoring penalty is a quantization artifact | MBPP+ | **Refuted (good).** FP16 reproduces the penalty exactly: feedback−resample −6.3 pp (p=0.0008) vs −6.1 pp at Q4; anchoring similarity invariant to within 0.003. | ✅ closed |
+| EXP-010 | 2026-07-24 | — | anchoring is Qwen-specific | MBPP+ | — | running |
 | EXP-008 | 2026-07-24 | RQ8 | anchoring penalty vanishes at frontier scale | MBPP+ | **Partial.** Baseline done: Llama-3.3-70B = 0.704, ties the 7B *specialist* (scale ≠ capability here). Repair arms blocked by hard free-tier daily-token caps (Groq 100k TPD, OpenRouter throttle). Needs paid tier or documented as future work. | ⚠ partial |
 | EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | **Partially — and still loses.** Anchoring drops most of any own-output arm (−0.11/−0.04/−0.12 similarity vs feedback), and ranking tracks it exactly; but reflect still loses to resample at 1.5B (−6.1 pp, p=0.006) and ties at 7B for 2.5× the tokens. | ✅ closed |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
@@ -122,7 +124,54 @@ being $-6.1$ pp at $Q4$, the headline result is a quantization artifact and
 the paper's central claim must be restricted to quantized deployment. That
 would be a major revision, and we would report it.
 
-**Status.** Pre-registered; launching 2026-07-24.
+**Status.** ✅ Closed 2026-07-24. **All three hypotheses supported; the
+quantization explanation is excluded.**
+
+### Result: the effect is precision-invariant
+
+MBPP+, n=378, k=8, FP16 versus the original $Q4$ 1.5B arms:
+
+| Quantity | $Q4$ | FP16 | Δ |
+|---|---|---|---|
+| baseline pass@1 | 0.566 | 0.561 | −0.005 |
+| resample | 0.749 | 0.746 | −0.003 |
+| placebo | 0.688 | 0.667 | −0.021 |
+| feedback | 0.688 | 0.683 | −0.005 |
+| **feedback − resample** | **−0.061** | **−0.063** | **−0.002** |
+| anchoring, placebo | 0.828 | 0.828 | **0.000** |
+| anchoring, feedback | 0.862 | 0.865 | +0.003 |
+
+Holm-corrected paired contrasts at FP16:
+
+| Contrast | Δ | 95% CI | Holm $p$ | |
+|---|---|---|---|---|
+| placebo − resample | −0.079 | [−0.114, −0.045] | **0.0000** | significant |
+| feedback − resample | −0.063 | [−0.098, −0.029] | **0.0008** | significant |
+| feedback − placebo | +0.016 | [−0.013, +0.048] | 0.3915 | n.s. |
+
+- **H1 supported.** `feedback − resample` remains significantly negative at
+  full precision (−6.3 pp, $p{=}0.0008$), reproducing the $Q4$ estimate
+  (−6.1 pp) to within 0.2 points. **Quantization is excluded as the cause of
+  the penalty.**
+- **H2 supported.** `feedback − placebo` is null at FP16 (+0.016, n.s.), so
+  execution-feedback content still adds nothing over a content-free notice.
+- **H3 supported, and strikingly so.** The anchoring measure reproduces
+  almost exactly: placebo 0.828 at both precisions (Δ = 0.000) and feedback
+  0.865 vs 0.862 (Δ = 0.003), with the own-output gap over `resample` holding
+  at +0.28 to +0.32.
+
+**Interpretation.** The objection predicted that removing quantization would
+shrink the penalty toward zero, since $Q4$ is documented to degrade in-context
+learning more than unconditional generation. The opposite pattern appears: the
+`placebo` penalty is slightly *larger* at FP16 (−7.9 vs −6.1 pp), and every
+mechanism quantity is unchanged. That the anchoring similarity is invariant to
+within 0.003 is the strongest single piece of evidence in the study that
+anchoring is a behavioural property of conditioning on one's own failed output
+rather than an artifact of numeric precision.
+
+**Note.** The FP16 model (3.1 GB) fits the 6 GB card entirely, so unlike the
+$Q4$ runs there is no CPU offload; the replication therefore also controls for
+the memory-layout difference, not only precision.
 
 ## EXP-010 — Does anchoring generalize beyond the Qwen family? (pre-registered 2026-07-24)
 
