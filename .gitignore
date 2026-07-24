@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -27,4 +27,3 @@ data/
 Thumbs.db
 .vscode/
 .idea/
-PAPERS/capability-ablations/submission/*.zip
