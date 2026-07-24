@@ -97,9 +97,22 @@ class TraceWriter:
         self.close()
 
 
-def read_trace(path: Path) -> list[dict[str, Any]]:
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read a JSONL file written by ``TraceWriter`` / the run harness.
+
+    Records are joined only by ``\\n`` (see ``TraceWriter.event``). Model
+    output can contain exotic Unicode line separators (U+2028/U+2029/U+0085)
+    that ``json.dumps`` does not escape; ``str.splitlines()`` *does* split on
+    them, which shatters a valid record into unparseable fragments. Iterating
+    the text-mode file handle splits on ``\\n`` (and ``\\r``) only, so it is
+    the correct way to read these files — never ``.read_text().splitlines()``.
+    """
     with path.open(encoding="utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]
+
+
+# Backwards-compatible alias; ``read_trace`` predates the generalized name.
+read_trace = read_jsonl
 
 
 @dataclass

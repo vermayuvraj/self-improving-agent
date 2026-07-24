@@ -13,6 +13,8 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from sia.trace import read_jsonl
+
 DEFAULT_RUNS_DIR = Path("runs")
 
 
@@ -99,8 +101,7 @@ def analyze_run(run_id: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> FailureReport
 
     verdicts: dict[tuple[str, int], dict] = {}
     responses: dict[tuple[str, int], dict] = {}
-    for line in (run_dir / "trace.jsonl").read_text(encoding="utf-8").splitlines():
-        event = json.loads(line)
+    for event in read_jsonl(run_dir / "trace.jsonl"):
         data = event["data"]
         key = (data.get("task_id"), data.get("sample"))
         if event["type"] == "verdict":

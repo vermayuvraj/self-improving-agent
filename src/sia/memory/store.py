@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from sia.bench import extract_code
+from sia.trace import read_jsonl
 
 # Trailing response-format directives shared by every benchmark instruction.
 _FORMAT_MARKERS = ("Respond with the complete", "Complete the following Python function")
@@ -113,8 +114,7 @@ def mine_from_runs(
         # Pair each passing verdict with the response that produced it. Keyed
         # by (task, sample, iteration) so repair traces resolve correctly.
         responses: dict[tuple, str] = {}
-        for line in trace_path.read_text(encoding="utf-8").splitlines():
-            event = json.loads(line)
+        for event in read_jsonl(trace_path):
             data = event["data"]
             key = (data.get("task_id"), data.get("sample"), data.get("iteration"))
             if event["type"] == "llm_response":

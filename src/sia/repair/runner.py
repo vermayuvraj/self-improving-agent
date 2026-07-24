@@ -25,7 +25,7 @@ from sia.llm import LLMClient
 from sia.parallel import default_workers, parallel_map
 from sia.repair.loop import REPAIR_TEMPERATURE, RepairOutcome, repair_task
 from sia.sandbox import ExecResult
-from sia.trace import RunManifest, TraceWriter
+from sia.trace import RunManifest, TraceWriter, read_jsonl
 from sia.trace.writer import new_run_id
 
 
@@ -79,8 +79,7 @@ def load_baseline(
     responses: dict[str, str] = {}
     verdicts: dict[str, dict] = {}
     trace_path = runs_dir / baseline_run_id / "trace.jsonl"
-    for line in trace_path.read_text(encoding="utf-8").splitlines():
-        event = json.loads(line)
+    for event in read_jsonl(trace_path):
         data = event["data"]
         if data.get("sample") not in (0, None):
             continue

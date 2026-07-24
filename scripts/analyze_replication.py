@@ -16,6 +16,7 @@ from pathlib import Path
 
 from sia.analysis import mcnemar_exact, paired_bootstrap_diff
 from sia.bench import extract_code, wilson_ci
+from sia.trace import read_jsonl
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS = ROOT / "runs"
@@ -67,8 +68,7 @@ def curve(cells: dict, model: str, cond: str, base: dict[str, bool], n: int) -> 
 def similarity(cells: dict, model: str, cond: str) -> float:
     run_id = cells[f"{model}|{BENCH}|{cond}|k={K_MAX}"]
     by_task: dict[str, list[tuple[int, str]]] = {}
-    for line in (RUNS / run_id / "trace.jsonl").read_text(encoding="utf-8").splitlines():
-        e = json.loads(line)
+    for e in read_jsonl(RUNS / run_id / "trace.jsonl"):
         if e["type"] != "llm_response":
             continue
         d = e["data"]

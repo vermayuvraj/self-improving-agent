@@ -1,5 +1,6 @@
 {
   "deepseek-coder:1.3b-instruct|mbpp+|none|k=0": "7a53b252e694",
   "deepseek-coder:1.3b-instruct|mbpp+|resample|k=8": "8825c1b778d4",
-  "deepseek-coder:1.3b-instruct|mbpp+|placebo|k=8": "1224d1420bc2"
+  "deepseek-coder:1.3b-instruct|mbpp+|placebo|k=8": "1224d1420bc2",
+  "deepseek-coder:1.3b-instruct|mbpp+|feedback|k=8": "48fa1aed2bbf"
 }
