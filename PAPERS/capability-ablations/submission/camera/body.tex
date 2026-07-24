@@ -372,6 +372,50 @@ matches it at 7B while consuming $2.5\times$ the output tokens ($5.5\times$ at
 1.5B). It is best understood as a partial and expensive mitigation of a problem
 that is avoided entirely by not conditioning on one's own output.
 
+\section{Replication: Precision and Model Family}
+\label{sec:replication}
+
+Two explanations compete with the anchoring account. The penalty might be an
+artifact of $Q4$ quantization, which is documented to degrade in-context
+learning more than unconditional generation---and the conditions we find
+wanting are exactly those that place extra material in context. Or it might be
+specific to the Qwen pre-training distribution. We test both by re-running the
+decomposition with one factor changed at a time, at 1.5B where the effect is
+largest.
+
+\paragraph{Precision.}
+Repeating the experiment with unquantized (FP16) weights, which also removes
+CPU offload because the 3.1\,GB model fits the GPU entirely, reproduces every
+quantity (Table~\ref{tab:replication}). The headline contrast is
+$-0.063$ at FP16 against $-0.061$ at $Q4$, still significant
+($p{=}0.0008$); \textsf{feedback} $-$ \textsf{placebo} remains null
+($+0.016$, n.s.); and the anchoring measure is unchanged to within $0.003$,
+with placebo identical at $0.828$ in both. The objection predicts the penalty
+should shrink toward zero without quantization. It does not shrink at all, and
+the placebo penalty is in fact slightly larger ($-0.079$). We therefore regard
+precision as excluded.
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Replication at 1.5B on MBPP+ ($k{=}8$). Changing precision leaves
+  every quantity intact, including the anchoring measure.}
+  \label{tab:replication}
+  \begin{tabular}{lccc}
+    \toprule
+    Quantity & $Q4$ & FP16 & $\Delta$ \\
+    \midrule
+    resample                 & 0.749 & 0.746 & $-0.003$ \\
+    placebo                  & 0.688 & 0.667 & $-0.021$ \\
+    feedback                 & 0.688 & 0.683 & $-0.005$ \\
+    \textbf{feedback $-$ resample} & $\mathbf{-0.061}$ & $\mathbf{-0.063}$ & $-0.002$ \\
+    \midrule
+    anchoring, placebo       & 0.828 & 0.828 & $0.000$ \\
+    anchoring, feedback      & 0.862 & 0.865 & $+0.003$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \section{Discussion}
 \label{sec:discussion}
 
@@ -392,21 +436,11 @@ losing arms, since the winning condition spends least. Feedback quotes failing
 inputs drawn from the same suite used for scoring, so any leakage would inflate
 the condition that lost.
 
-Two limitations bound the generality of the result and we do not claim to have
-excluded either. First, all models are served at $Q4\_K\_M$ quantization.
-Quantization is known to degrade in-context learning more than unconditional
-generation, and the conditions we find wanting are precisely those that place
-additional material in context. We therefore cannot separate a genuine
-anchoring effect from a precision-induced weakening of in-context use, and an
-unquantized replication at 1.5B and 3B is the natural check; we note that
-anchoring is measured as inter-attempt similarity, a quantity with no obvious
-dependence on precision, which makes a pure quantization artifact less likely
-but does not rule it out. Second, all models come from a single family
-(Qwen2.5-Coder), so the effect may reflect that pre-training distribution
-rather than small code models generally; replication on an independent family
-in the 3--8B range would settle this. Our scope is further limited to one
-benchmark family and function-level synthesis, with lexical rather than
-semantic retrieval and a single reflection prompt formulation.
+Our scope is limited to one benchmark family and function-level synthesis,
+with lexical rather than semantic retrieval and a single reflection prompt
+formulation. Two further concerns---that the effect is an artifact of
+quantization, or specific to one model family---are addressed directly in
+Section~\ref{sec:replication}.
 
 \paragraph{The control determines the conclusion.}
 For any capability that adds context to a prompt, the appropriate control is an

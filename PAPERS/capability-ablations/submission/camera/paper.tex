@@ -45,7 +45,10 @@ study, anchoring}
 \vskip 0.3in
 ]
 
-\printAffiliationsAndNotice{}
+% ORCID appears only in the camera-ready: it resolves to the author's
+% identity and would break double-blind review if included in the submission.
+\printAffiliationsAndNotice{%
+  ORCID: \href{https://orcid.org/0009-0004-2138-3159}{0009-0004-2138-3159}}
 
 \input{body}
 
