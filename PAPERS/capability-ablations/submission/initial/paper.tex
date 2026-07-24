@@ -1,0 +1,73 @@
+﻿%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ICML 2026 --- INITIAL (ANONYMOUS) SUBMISSION
+%
+% Body limit: 8 pages, excluding references and appendices.
+% The icml2026 package WITHOUT the [accepted] option automatically suppresses
+% author names and affiliations, so the author block below stays anonymous.
+% Acknowledgements and repository links are deliberately absent: ICML rejects
+% submissions that reveal author identity, explicitly or implicitly.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Anonymous review version.
+\usepackage{icml2026}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\pass}{\mathrm{pass}@1}
+
+\icmltitlerunning{Blind Resampling Outperforms Self-Repair in Small Code Models}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Try Again, Don't Look Back:\\
+Blind Resampling Outperforms Self-Repair in Small Code Models}
+
+% Author information is retained here but suppressed by the style file
+% because the [accepted] option is not set.
+\begin{icmlauthorlist}
+\icmlauthor{Anonymous Author}{anon}
+\end{icmlauthorlist}
+
+\icmlaffiliation{anon}{Anonymous Institution}
+\icmlcorrespondingauthor{Anonymous Author}{anon@example.com}
+
+\icmlkeywords{code generation, self-repair, large language models, ablation
+study, anchoring}
+
+\vskip 0.3in
+]
+
+\printAffiliationsAndNotice{}
+
+\input{body}
+
+\section*{Impact Statement}
+
+This paper advances the empirical understanding of when iterative
+self-correction helps code-generating models. Its principal practical
+consequence is a reduction in compute: we find that the cheapest strategy is
+also the most accurate at the scales studied, so practitioners who adopt the
+recommendation will spend fewer tokens for equal or better results, with a
+corresponding reduction in energy use. A methodological consequence is that
+capabilities added to agent prompts should be evaluated against
+equally-expensive uninformative controls; adopting this standard should reduce
+the number of overstated capability claims in the literature. We see no
+specific ethical risk arising from this work beyond those already general to
+automated code generation, and our findings, being cautionary about an existing
+technique, do not enable new harmful capability.
+
+\bibliography{references}
+\bibliographystyle{icml2026}
+
+\end{document}

@@ -27,3 +27,4 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+PAPERS/capability-ablations/submission/*.zip
