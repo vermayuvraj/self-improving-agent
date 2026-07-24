@@ -14,7 +14,40 @@ conditioning on a failed attempt *anchors* the model to a wrong approach.
 | `findings.md` | Plain-text results digest with every number |
 | `draft.md` | Earlier Markdown scaffold (superseded by `paper.tex`) |
 
-## Compiling
+## Compiled Overleaf projects (live)
+
+Both variants are built, uploaded and compiling cleanly (0 errors):
+
+| Variant | Overleaf | Pages | Notes |
+|---|---|---|---|
+| Initial submission | [`6a631e92…`](https://www.overleaf.com/project/6a631e921fac79ee11d04552) | 6 | Anonymized ("Anonymous Authors"); no acknowledgements or repo link, per ICML double-blind rules |
+| Camera-ready | [`6a631f7a…`](https://www.overleaf.com/project/6a631f7ae5812294b6cfb379) | 6 | De-anonymized; Impact Statement, Acknowledgements (incl. AI-assistance disclosure), code link |
+
+Rebuild the zips from source with `scripts/build_submission.ps1`; the built
+`submission/*.zip` are committed so they can be re-imported directly.
+
+**Known benign warning.** hyperref reports "Token not allowed in a PDF string"
+for the `\\` line break in the title; this affects only the PDF metadata
+string, not the rendered paper, and is common in ICML submissions.
+
+## ICML 2026 compliance notes
+
+- **Page limits.** 8 pages of body for the initial submission, 9 for
+  camera-ready; references, acknowledgements, impact statement and appendices
+  are excluded. Both builds are well inside the limit.
+- **Anonymity.** The `icml2026` package suppresses the author block unless
+  `[accepted]` is passed, so the initial project is anonymous by construction.
+  Acknowledgements and the repository URL appear only in the camera-ready.
+- **Generative-AI policy.** ICML permits LLM assistance in writing and
+  research but holds authors fully responsible for all content, forbids
+  listing an LLM as an author, and prohibits plagiarism and prompt injection.
+  There is no numeric "AI-detection" threshold. The camera-ready includes an
+  explicit disclosure of AI assistance; the author retains responsibility.
+- **Originality.** All prose is written from this project's own experiments;
+  related work is summarized rather than quoted, and every number derives from
+  a recorded run manifest and replayable trace.
+
+## Compiling elsewhere
 
 No LaTeX is needed locally. Fastest path is **Overleaf** (free):
 
