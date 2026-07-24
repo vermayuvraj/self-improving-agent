@@ -10,10 +10,11 @@ value of the extra attempt. Using a placebo-controlled design on MBPP+ at three
 model scales (1.5B, 3B, 7B), we compare four matched-budget retry conditions:
 blind resampling, a content-free failure notice, genuine execution feedback,
 and feedback augmented with verbal self-reflection. Blind resampling is the
-strongest condition at every scale while consuming $2.5$--$5.5\times$ fewer
-tokens; conditioning on the model's own failed attempt costs $6.1$ points at
-1.5B ($p{=}0.006$), and the informational content of execution feedback adds
-nothing measurable over the placebo. We attribute this to \emph{anchoring}:
+strongest condition below 7B, and remains statistically tied with the best
+condition at 7B, while consuming $2.5$--$5.5\times$ fewer tokens; conditioning
+on the model's own failed attempt costs $6.1$ points at 1.5B ($p{=}0.006$),
+and the informational content of execution feedback adds nothing measurable
+over the placebo. We attribute this to \emph{anchoring}:
 when shown its previous attempt, a model reproduces a near-identical program in
 $33$--$68\%$ of retries, against $2$--$14\%$ under blind resampling. Two further
 experiments delimit the effect. Retrieved solutions to \emph{other} tasks change
@@ -39,10 +40,11 @@ benefit of persistence.
 We therefore treat self-repair as a treatment requiring a placebo. Our control
 is \emph{blind resampling}: the original prompt, re-sampled, with no reference
 to the failed attempt. Against this control the standard result inverts. In the
-1.5B--7B regime, showing a model its own failed program makes it \emph{less}
-likely to succeed than simply asking again, and the execution feedback that
-practitioners take to be the active ingredient contributes nothing detectable
-beyond a content-free notice that the attempt was wrong.
+1.5B and 3B settings, showing a model its own failed program makes it
+\emph{less} likely to succeed than simply asking again; by 7B the penalty has
+closed to a statistical tie. Across the whole range, the execution feedback
+that practitioners take to be the active ingredient contributes nothing
+detectable beyond a content-free notice that the attempt was wrong.
 
 The mechanism we identify is anchoring. A prompt containing a failed program
 biases generation toward local edits of that program, whereas a fresh draw is
@@ -239,10 +241,14 @@ the nine contrasts; none favors an own-output condition at any scale.
 \end{figure}
 
 \paragraph{Cost.}
-The ordering is not a trade-off. Blind resampling reaches the best pass rate
-using the fewest tokens (Figure~\ref{fig:pareto}), partly because succeeding
-more often lets it exit earlier. The own-output conditions are Pareto-dominated
-at every scale.
+Blind resampling is the cheapest condition at every scale
+(Figure~\ref{fig:pareto}), partly because succeeding more often lets it exit
+earlier. Below 7B this makes the comparison one-sided: at 1.5B and 3B the
+own-output conditions are strictly Pareto-dominated, being worse on accuracy
+\emph{and} more expensive. At 7B the picture is a genuine trade-off rather
+than a dominance: reflection buys $+0.8$ points, which is not significant, for
+$2.5\times$ the output tokens. Blind resampling remains on the Pareto frontier
+at all three scales.
 
 \paragraph{Where the gains are.}
 Improvement is concentrated in the first two iterations: $46$--$53\%$ of all
@@ -286,13 +292,20 @@ anticipate. Anchoring \emph{strength} is roughly constant across scale, but its
 to anchor upon. The diminishing penalty at 7B therefore reflects anchoring
 becoming inexpensive rather than feedback becoming useful.
 
-\paragraph{An ordering the measure was not fitted to.}
+\paragraph{A partial ordering the measure was not fitted to.}
 Among the three conditions that expose the model to its own output, the
-anchoring ranking inverts the accuracy ranking exactly
-(Figure~\ref{fig:ordering}): the most anchored condition performs worst and the
-least anchored best, at every scale. A mechanism that recovers an ordering it
-was not constructed to reproduce is stronger evidence than the aggregate
-contrast alone.
+\emph{least} anchored condition is the best performer at all three scales
+(Figure~\ref{fig:ordering}): reflection reduces similarity by $0.04$--$0.12$
+relative to feedback and is correspondingly the strongest of the three. The
+measure does not, however, resolve the remaining pair. Placebo and feedback
+differ in anchoring by only $0.034$, $0.039$ and $0.003$ across scale---within
+the noise of the metric---and their accuracy ordering does not follow, with
+placebo the weaker of the two at 3B and 7B despite being marginally less
+anchored. At 1.5B the three conditions are exactly tied in accuracy, so no
+ordering exists to recover. We therefore read this as directional support for
+the mechanism at the resolved end of the range rather than as a rank
+correspondence, and we do not claim the measure explains differences between
+conditions whose anchoring is indistinguishable.
 
 \begin{figure}[t]
   \centering
@@ -377,10 +390,23 @@ Arms differ in token consumption because early exit on success is intended and
 cost is treated as an outcome; the direction of that difference favors the
 losing arms, since the winning condition spends least. Feedback quotes failing
 inputs drawn from the same suite used for scoring, so any leakage would inflate
-the condition that lost. Our scope is one benchmark family, one model family
-below 7B at $Q4$ quantization, and function-level synthesis; retrieval is
-lexical rather than semantic; and reflection is tested under a single prompt
-formulation.
+the condition that lost.
+
+Two limitations bound the generality of the result and we do not claim to have
+excluded either. First, all models are served at $Q4\_K\_M$ quantization.
+Quantization is known to degrade in-context learning more than unconditional
+generation, and the conditions we find wanting are precisely those that place
+additional material in context. We therefore cannot separate a genuine
+anchoring effect from a precision-induced weakening of in-context use, and an
+unquantized replication at 1.5B and 3B is the natural check; we note that
+anchoring is measured as inter-attempt similarity, a quantity with no obvious
+dependence on precision, which makes a pure quantization artifact less likely
+but does not rule it out. Second, all models come from a single family
+(Qwen2.5-Coder), so the effect may reflect that pre-training distribution
+rather than small code models generally; replication on an independent family
+in the 3--8B range would settle this. Our scope is further limited to one
+benchmark family and function-level synthesis, with lexical rather than
+semantic retrieval and a single reflection prompt formulation.
 
 \paragraph{The control determines the conclusion.}
 For any capability that adds context to a prompt, the appropriate control is an
@@ -392,18 +418,21 @@ budget it loses. The treatment is unchanged---only the comparison moved.
 \section{Conclusion}
 \label{sec:conclusion}
 
-Between 1.5B and 7B, self-repair on function-level code tasks is worse than
-blind resampling on both accuracy and cost, because conditioning on a failed
-attempt anchors the model to an unsuccessful approach. Retrieved cross-task
-experience produces no effect, which localizes the mechanism to
-self-conditioning; reflection mitigates it partially but remains dominated on
-cost. A practical reading for small-model agents: retry rather than patch, cap
-iteration budgets near $k{\approx}2$, and treat execution feedback as a costed
-resource rather than a default.
+At 1.5B and 3B, self-repair on function-level code tasks is worse than blind
+resampling on both accuracy and cost, because conditioning on a failed attempt
+anchors the model to an unsuccessful approach; by 7B the penalty has closed to
+a tie, with reflection buying a non-significant $+0.8$ points for
+$2.5\times$ the tokens. Seven-billion parameters thus reads as a transitional
+scale at which anchoring becomes cheap rather than one at which feedback
+becomes informative---the feedback-versus-placebo contrast remains null
+throughout. Retrieved cross-task experience produces no effect, which localizes
+the mechanism to self-conditioning. A practical reading for small-model agents:
+retry rather than patch, cap iteration budgets near $k{\approx}2$, and treat
+execution feedback as a costed resource rather than a default.
 
-Two extensions follow directly. We collected a baseline for a larger model
-(Llama-3.3-70B, $\pass{=}0.704$ on MBPP+), which notably matches the 7B code
-specialist---raw scale without specialization does not improve first-attempt
-quality here, so such an arm probes scale at similar capability. Completing its
-repair contrast, and substituting semantic retrieval or distilled lessons for
-raw exemplars, are the natural next steps.
+The most informative extensions are an unquantized replication and a second
+model family, which together would separate the anchoring account from
+precision and pre-training confounds; beyond that, extending the scale ladder
+past 7B would establish where the penalty disappears, and substituting semantic
+retrieval or distilled lessons for raw exemplars would test whether cross-task
+experience remains inert under a stronger retriever.
