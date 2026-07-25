@@ -21,6 +21,11 @@ experiments delimit the effect. Retrieved solutions to \emph{other} tasks change
 nothing (bounded to $\pm3.5$ points), which localizes the harm to
 self-conditioning rather than context length; and reflection, the only
 condition that measurably weakens the anchor, remains dominated on cost.
+Replication rules out two competing explanations: the penalty is unchanged at
+full precision, and it reproduces on an independent model family. Across six
+configurations spanning two families and two precisions, its magnitude is
+predicted by baseline quality alone ($r{=}0.96$)---the cost of anchoring is
+the cost of committing to a bad first attempt.
 \end{abstract}
 
 \section{Introduction}
@@ -63,8 +68,11 @@ mechanism, and show it explains the scale trend; (iv) establish, through a null
 result on retrieved cross-task experience, that the penalty is specific to
 self-conditioning rather than a generic consequence of longer prompts; (v)
 test whether verbal reflection escapes the mechanism, finding that it weakens
-the anchor without paying for itself; and (vi) release a harness in which every
-experiment was pre-registered and runs on a single consumer GPU.
+the anchor without paying for itself; (vi) rule out quantization and model
+family as explanations by replication, and show that the penalty's magnitude is
+governed by baseline capability across two families; and (vii) release a
+harness in which every experiment was pre-registered and runs on a single
+consumer GPU.
 
 \section{Related Work}
 \label{sec:related}
@@ -380,8 +388,10 @@ artifact of $Q4$ quantization, which is documented to degrade in-context
 learning more than unconditional generation---and the conditions we find
 wanting are exactly those that place extra material in context. Or it might be
 specific to the Qwen pre-training distribution. We test both by re-running the
-decomposition with one factor changed at a time, at 1.5B where the effect is
-largest.
+decomposition with one factor changed at a time: unquantized weights at 1.5B,
+and an independent model family (DeepSeek-Coder) at 1.3B and 6.7B. Neither
+explanation survives, and the family replication yields a sharper account of
+the scale trend.
 
 \paragraph{Precision.}
 Repeating the experiment with unquantized (FP16) weights, which also removes
@@ -412,6 +422,63 @@ precision as excluded.
     \midrule
     anchoring, placebo       & 0.828 & 0.828 & $0.000$ \\
     anchoring, feedback      & 0.862 & 0.865 & $+0.003$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Model family.}
+Repeating the decomposition on DeepSeek-Coder---a different laboratory,
+pre-training corpus and tokenizer---reproduces the penalty at both scales
+tested. At 1.3B, \textsf{placebo} $-$ \textsf{resample} is $-0.138$
+($p<10^{-4}$) and \textsf{feedback} $-$ \textsf{resample} is $-0.114$
+($p<10^{-4}$); at 6.7B the corresponding values are $-0.045$ ($p{=}0.007$)
+and $-0.029$ (n.s.). As with Qwen, \textsf{feedback} $-$ \textsf{placebo} is
+null in both cases. The effect is therefore not a property of one
+pre-training distribution.
+
+\paragraph{The penalty tracks capability, not scale or family.}
+Pooling all six configurations (Figure~\ref{fig:capability} and
+Table~\ref{tab:capability}), the anchoring
+penalty is strongly predicted by baseline quality alone
+($r{=}{+}0.96$ against \textsf{placebo} $-$ \textsf{resample};
+$r{=}{+}0.95$ against \textsf{feedback} $-$ \textsf{resample}). Two
+comparisons separate the candidate explanations. Qwen-3B and DeepSeek-6.7B
+have nearly identical baselines ($0.598$ and $0.608$) and nearly identical
+penalties ($-0.069$ and $-0.045$) despite different families, so family
+explains little. DeepSeek-1.3B and DeepSeek-6.7B share a family yet differ
+$3.1\times$ in penalty ($-0.138$ against $-0.045$), so capability explains
+much. This is what the mechanism predicts: the cost of committing to a
+previous attempt is the cost of committing to a \emph{bad} attempt, and so
+scales with how bad that attempt typically is. The apparent scale trend of
+Section~\ref{sec:repair} is thus a capability effect, now observed across two
+independent model families. We report the correlation as descriptive support
+rather than a fitted law: six unevenly spaced points do not warrant more.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\columnwidth]{figures/fig7_capability.pdf}
+  \caption{Anchoring penalty against baseline quality. Points from the two
+  model families interleave along a single trend, indicating that capability
+  rather than family governs the penalty.}
+  \label{fig:capability}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{Anchoring penalty against baseline quality across two families and
+  two precisions. Ordered by baseline; $r{=}{+}0.96$.}
+  \label{tab:capability}
+  \begin{tabular}{llcc}
+    \toprule
+    Model & Family & $\pass$ & placebo $-$ resample \\
+    \midrule
+    1.3B      & DeepSeek & 0.201 & $-0.138$ \\
+    1.5B FP16 & Qwen     & 0.561 & $-0.079$ \\
+    1.5B $Q4$ & Qwen     & 0.566 & $-0.061$ \\
+    3B        & Qwen     & 0.598 & $-0.069$ \\
+    6.7B      & DeepSeek & 0.608 & $-0.045$ \\
+    7B        & Qwen     & 0.709 & $-0.019$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -457,16 +524,19 @@ resampling on both accuracy and cost, because conditioning on a failed attempt
 anchors the model to an unsuccessful approach; by 7B the penalty has closed to
 a tie, with reflection buying a non-significant $+0.8$ points for
 $2.5\times$ the tokens. Seven-billion parameters thus reads as a transitional
-scale at which anchoring becomes cheap rather than one at which feedback
+point at which anchoring becomes cheap rather than one at which feedback
 becomes informative---the feedback-versus-placebo contrast remains null
-throughout. Retrieved cross-task experience produces no effect, which localizes
-the mechanism to self-conditioning. A practical reading for small-model agents:
+throughout. Replication shows the effect is neither a quantization artifact nor
+a property of one model family, and that its magnitude is set by baseline
+capability: the penalty is the cost of committing to a bad first attempt, so it
+fades as first attempts improve. Retrieved cross-task experience produces no
+effect, which localizes the mechanism to self-conditioning. A practical reading
+for small-model agents:
 retry rather than patch, cap iteration budgets near $k{\approx}2$, and treat
 execution feedback as a costed resource rather than a default.
 
-The most informative extensions are an unquantized replication and a second
-model family, which together would separate the anchoring account from
-precision and pre-training confounds; beyond that, extending the scale ladder
-past 7B would establish where the penalty disappears, and substituting semantic
-retrieval or distilled lessons for raw exemplars would test whether cross-task
+The capability relationship suggests the sharpest remaining test: a model whose
+first attempts are strong enough that anchoring should cost nothing, which our
+correlation places not far beyond the 7B point. Substituting semantic retrieval
+or distilled lessons for raw exemplars would likewise test whether cross-task
 experience remains inert under a stronger retriever.

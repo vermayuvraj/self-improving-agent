@@ -1,0 +1,6 @@
+{
+  "deepseek-coder:6.7b-instruct|mbpp+|none|k=0": "289e1a31b0b0",
+  "deepseek-coder:6.7b-instruct|mbpp+|resample|k=8": "f720d8ece6a8",
+  "deepseek-coder:6.7b-instruct|mbpp+|placebo|k=8": "3cd5943a1f20",
+  "deepseek-coder:6.7b-instruct|mbpp+|feedback|k=8": "62a8221da3b6"
+}

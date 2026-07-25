@@ -307,6 +307,58 @@ def _save(fig: plt.Figure, name: str) -> None:
     print(f"wrote {name}.pdf / .png")
 
 
+# --- Figure 7: capability law across families -----------------------------
+def fig_capability() -> None:
+    """Anchoring penalty against baseline quality, two families, two precisions.
+
+    Values are transcribed from the closed EXP-004/009/010/010B analyses rather
+    than recomputed, because the replications live in separate cells files with
+    different model tags; each is reproducible via
+    scripts/analyze_replication.py.
+    """
+    pts = [
+        # (label, family, baseline, placebo - resample)
+        ("1.3B", "DeepSeek", 0.201, -0.138),
+        ("1.5B fp16", "Qwen", 0.561, -0.079),
+        ("1.5B", "Qwen", 0.566, -0.061),
+        ("3B", "Qwen", 0.598, -0.069),
+        ("6.7B", "DeepSeek", 0.608, -0.045),
+        ("7B", "Qwen", 0.709, -0.019),
+    ]
+    fam_color = {"Qwen": COLOR["resample"], "DeepSeek": COLOR["feedback"]}
+    fig, ax = plt.subplots(figsize=(5.8, 4.0))
+    for label, fam, base, pen in pts:
+        ax.scatter(base, pen, s=70, color=fam_color[fam], zorder=3,
+                   edgecolor="white", lw=0.6)
+        ax.annotate(label, (base, pen), fontsize=7, color="#555",
+                    xytext=(4, -9), textcoords="offset points")
+    # least-squares trend line, drawn thin: descriptive, not a fitted law
+    xs = [p[2] for p in pts]
+    ys = [p[3] for p in pts]
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True)) / sum(
+        (x - mx) ** 2 for x in xs
+    )
+    lo, hi = min(xs) - 0.03, max(xs) + 0.03
+    ax.plot([lo, hi], [my + slope * (lo - mx), my + slope * (hi - mx)],
+            "--", color="#aaa", lw=1, zorder=1)
+    ax.axhline(0, color="#333", lw=0.8, alpha=0.6)
+
+    from matplotlib.lines import Line2D
+
+    ax.legend(
+        handles=[Line2D([], [], marker="o", ls="", color=c, label=f)
+                 for f, c in fam_color.items()],
+        frameon=False, fontsize=8, loc="lower right", title="family",
+    )
+    ax.set_xlabel("baseline pass@1 (first-attempt quality)")
+    ax.set_ylabel("anchoring penalty\n(placebo $-$ resample at $k$=8)")
+    ax.set_title("The penalty tracks capability, not family ($r$ = +0.96)", fontsize=9.5)
+    ax.grid(True, alpha=0.25, lw=0.5)
+    _save(fig, "fig7_capability")
+
+
 def main() -> None:
     fig_kcurves()
     fig_forest()
@@ -314,6 +366,7 @@ def main() -> None:
     fig_pareto()
     fig_ordering(sims)
     fig_memory()
+    fig_capability()
     print(f"\nAll figures in {FIG}")
 
 

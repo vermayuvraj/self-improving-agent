@@ -34,7 +34,7 @@ the model is nondeterministic.
 | EXP-002 | planned | RQ8 | test-time reasoning pays for itself per unit latency | HumanEval + MBPP | — | planned |
 | EXP-006 | 2026-07-22 | RQ4 | other-task experience helps, and relevance matters | MBPP+ | **Clean null.** All 9 contrasts n.s. after Holm; bounded to ±3.5 pp. Isolates EXP-004's harm as specific to *self*-conditioning. | ✅ closed |
 | EXP-009 | 2026-07-24 | — | anchoring penalty is a quantization artifact | MBPP+ | **Refuted (good).** FP16 reproduces the penalty exactly: feedback−resample −6.3 pp (p=0.0008) vs −6.1 pp at Q4; anchoring similarity invariant to within 0.003. | ✅ closed |
-| EXP-010 | 2026-07-24 | — | anchoring is Qwen-specific | MBPP+ | — | running |
+| EXP-010 | 2026-07-25 | — | anchoring is Qwen-specific | MBPP+ | **Refuted (good).** DeepSeek 1.3B −13.8 pp, 6.7B −4.5 pp, both significant. Penalty tracks capability (r=+0.96 over 6 configs, 2 families), not family. | ✅ closed |
 | EXP-008 | 2026-07-24 | RQ8 | anchoring penalty vanishes at frontier scale | MBPP+ | **Partial.** Baseline done: Llama-3.3-70B = 0.704, ties the 7B *specialist* (scale ≠ capability here). Repair arms blocked by hard free-tier daily-token caps (Groq 100k TPD, OpenRouter throttle). Needs paid tier or documented as future work. | ⚠ partial |
 | EXP-007 | 2026-07-22 | RQ5 | verbal reflection breaks the anchor | MBPP+ | **Partially — and still loses.** Anchoring drops most of any own-output arm (−0.11/−0.04/−0.12 similarity vs feedback), and ranking tracks it exactly; but reflect still loses to resample at 1.5B (−6.1 pp, p=0.006) and ties at 7B for 2.5× the tokens. | ✅ closed |
 | EXP-005 | 2026-07-22 | RQ1 | anchoring is the mechanism: feedback arms show lower inter-attempt diversity | MBPP+ | **Confirmed.** Inter-attempt similarity +0.30–0.38 vs resample at every scale; 33–68% of retries near-identical when shown own code vs 2–14% blind. | ✅ closed |
@@ -227,7 +227,61 @@ this decision. The amendment addresses a confound in the design rather than an
 unwelcome result, and is logged here rather than folded silently into the
 method.
 
-**Status.** 1.3B arms running; 6.7B comparator queued.
+**Status.** ✅ Closed 2026-07-25. **The penalty generalizes across families,
+and tracks capability rather than family.**
+
+### Results
+
+Paired contrasts at k=8, MBPP+ (n=378), Holm-corrected:
+
+| Model | baseline | placebo − resample | feedback − resample |
+|---|---|---|---|
+| deepseek-coder:1.3b | 0.201 | **−0.138** (p<0.0001) | **−0.114** (p<0.0001) |
+| deepseek-coder:6.7b | 0.608 | **−0.045** (p=0.0069) | −0.029 (p=0.14, n.s.) |
+
+`feedback − placebo` is null in both (+0.024 and +0.016, n.s.), reproducing
+the Qwen finding that execution-feedback *content* adds nothing.
+
+- **H1 supported.** The penalty is significantly negative in an independent
+  family at both scales — it is not a Qwen artifact.
+- **H2 supported.** Own-output conditions are far more self-similar than
+  `resample` (6.7B: 0.79/0.74 vs 0.48), the same anchoring signature.
+- **H3 supported.** The low DeepSeek-1.3B baseline is not a confound; the
+  contrasts are within-model and paired.
+
+### The capability law
+
+Pooling all six configurations across both families and both precisions, the
+anchoring penalty is almost perfectly predicted by baseline quality:
+
+| Model | family | baseline | placebo − resample |
+|---|---|---|---|
+| deepseek 1.3b | DeepSeek | 0.201 | −0.138 |
+| qwen 1.5b FP16 | Qwen | 0.561 | −0.079 |
+| qwen 1.5b Q4 | Qwen | 0.566 | −0.061 |
+| qwen 3b | Qwen | 0.598 | −0.069 |
+| deepseek 6.7b | DeepSeek | 0.608 | −0.045 |
+| qwen 7b | Qwen | 0.709 | −0.019 |
+
+**Pearson $r = +0.96$** between baseline pass@1 and the penalty
+($r = +0.95$ for `feedback − resample`). Two comparisons isolate the
+mechanism:
+
+- **Capability-matched, different family.** Qwen-3B (0.598) and
+  DeepSeek-6.7B (0.608) have near-identical baselines and near-identical
+  penalties (−0.069 vs −0.045). Family explains little.
+- **Same family, different capability.** DeepSeek-1.3B (0.201) and
+  DeepSeek-6.7B (0.608) share a family, yet the penalty differs 3.1×
+  (−0.138 vs −0.045). Capability explains a lot.
+
+This is exactly what anchoring predicts: the cost of committing to your
+previous attempt is the cost of committing to a *bad* attempt, so it scales
+with how bad that attempt typically is. The scale trend reported for Qwen is
+therefore not a scale effect but a capability effect, now demonstrated across
+two independent pre-training distributions.
+
+**Caveat.** Six points, unevenly spaced, no error bars on $r$; we report the
+correlation as descriptive support for the mechanism, not as a fitted law.
 
 ## EXP-008 — Does the anchoring penalty vanish at frontier scale? (pre-registered 2026-07-23)
 
