@@ -14,17 +14,64 @@ conditioning on a failed attempt *anchors* the model to a wrong approach.
 | `findings.md` | Plain-text results digest with every number |
 | `draft.md` | Earlier Markdown scaffold (superseded by `paper.tex`) |
 
-## Compiled Overleaf projects (live)
+## The three packages
 
-Both variants are built, uploaded and compiling cleanly (0 errors):
+Build all three with `scripts/build_submission.ps1`. Each zip is standalone —
+`paper.tex`, `body.tex`, `references.bib`, `figures/` and the ICML style files.
 
-| Variant | Overleaf | Pages | Notes |
+| Zip | For | Author block | Extra sections |
 |---|---|---|---|
-| Initial submission | [`6a631e92…`](https://www.overleaf.com/project/6a631e921fac79ee11d04552) | 6 | Anonymized ("Anonymous Authors"); no acknowledgements or repo link, per ICML double-blind rules |
-| Camera-ready | [`6a631f7a…`](https://www.overleaf.com/project/6a631f7ae5812294b6cfb379) | 6 | De-anonymized; Impact Statement, Acknowledgements (incl. AI-assistance disclosure), code link |
+| `icml2026-initial-submission.zip` | ICML review | **Anonymous** | — |
+| `icml2026-camera-ready.zip` | after acceptance | Named + ORCID | Acknowledgements, code link |
+| `arxiv-preprint.zip` | arXiv | Named + ORCID | Acknowledgements, code link |
 
-Rebuild the zips from source with `scripts/build_submission.ps1`; the built
-`submission/*.zip` are committed so they can be re-imported directly.
+All three share one `body.tex`, so the science can never drift between them;
+only the preamble and the trailing sections differ.
+
+**Anonymity is enforced at build time.** The script greps the anonymous
+package for `Yuvraj`, `orcid`, `0009-0004` and `vermayuvraj`, and aborts the
+build if any appear. A leak here would be a desk reject, so it is checked
+mechanically rather than by eye.
+
+### Live Overleaf projects
+
+| Variant | Overleaf | Pages |
+|---|---|---|
+| Initial submission | [`6a631e92…`](https://www.overleaf.com/project/6a631e921fac79ee11d04552) | 6 |
+| Camera-ready | [`6a631f7a…`](https://www.overleaf.com/project/6a631f7ae5812294b6cfb379) | 6 |
+
+These hold an earlier revision; re-upload the current zips (Overleaf → project
+→ Upload → overwrite) to refresh them.
+
+## arXiv submission
+
+`arxiv-preprint.zip` uses `\usepackage[preprint]{icml2026}`, which prints real
+author names and a footer reading only *"Preprint. \<date\>."* — it makes no
+claim of ICML acceptance.
+
+**Policy, which matters here.** ICML permits arXiv preprints, but forbids
+advertising a paper as an ICML submission at any time during review, and the
+anonymous submission must not link to the preprint. Both constraints are
+satisfied: nothing in the preprint mentions ICML, and the anonymous package
+contains no repository or preprint link. Do not add "submitted to ICML" to the
+arXiv comments field until decisions are announced.
+
+**Steps.** Paste the title, authors, categories and plain-text abstract from
+[`submission/ARXIV_METADATA.txt`](submission/ARXIV_METADATA.txt), then upload
+`arxiv-preprint.zip`.
+
+**Packaging conforms to arXiv's rules:** style files ship with the source
+(`icml2026.sty`/`.bst` are not in TeX Live); figures are PDF, since arXiv does
+no on-the-fly conversion in pdflatex mode; no `.aux`/`.log`/`.out`/`.blg`
+artifacts are included; and archive entries use forward slashes, because
+Windows PowerShell's `Compress-Archive` writes backslashes that Linux
+extraction can misread as literal filenames.
+
+**Optional hardening — the `.bbl`.** arXiv will run BibTeX against the shipped
+`references.bib`, which normally works. To remove all doubt, compile the
+preprint once on Overleaf, download `paper.bbl` from *Other logs and files*,
+add it to the zip root, and arXiv will use it directly instead of rebuilding
+the bibliography.
 
 **Known benign warning.** hyperref reports "Token not allowed in a PDF string"
 for the `\\` line break in the title; this affects only the PDF metadata

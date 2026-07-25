@@ -1,0 +1,95 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% arXiv PREPRINT
+%
+% Uses the icml2026 [preprint] option: real author names are shown and the
+% footer reads "Preprint. <date>." with no claim of ICML acceptance. This
+% matters — ICML permits preprints but forbids advertising a paper as an ICML
+% submission during the review period, so this file must never say "submitted
+% to ICML". Correspondingly, the anonymous ICML submission must not link back
+% to this preprint.
+%
+% No page limit applies on arXiv, so the impact statement, acknowledgements
+% and code link are all retained.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Preprint: de-anonymized, but not marked as accepted anywhere.
+\usepackage[preprint]{icml2026}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\pass}{\mathrm{pass}@1}
+
+\icmltitlerunning{Blind Resampling Outperforms Self-Repair in Small Code Models}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Try Again, Don't Look Back:\\
+Blind Resampling Outperforms Self-Repair in Small Code Models}
+
+\begin{icmlauthorlist}
+\icmlauthor{Yuvraj Verma}{ind}
+\end{icmlauthorlist}
+
+\icmlaffiliation{ind}{Independent Researcher, India}
+\icmlcorrespondingauthor{Yuvraj Verma}{yuvrajverma282004@gmail.com}
+
+\icmlkeywords{code generation, self-repair, large language models, ablation
+study, anchoring}
+
+\vskip 0.3in
+]
+
+\printAffiliationsAndNotice{%
+  ORCID: \href{https://orcid.org/0009-0004-2138-3159}{0009-0004-2138-3159}}
+
+\input{body}
+
+\section*{Impact Statement}
+
+This paper advances the empirical understanding of when iterative
+self-correction helps code-generating models. Its principal practical
+consequence is a reduction in compute: we find that the cheapest strategy is
+also the most accurate at the scales studied, so practitioners who adopt the
+recommendation will spend fewer tokens for equal or better results, with a
+corresponding reduction in energy use. A methodological consequence is that
+capabilities added to agent prompts should be evaluated against
+equally-expensive uninformative controls; adopting this standard should reduce
+the number of overstated capability claims in the literature. We see no
+specific ethical risk arising from this work beyond those already general to
+automated code generation, and our findings, being cautionary about an existing
+technique, do not enable new harmful capability.
+
+\section*{Acknowledgements}
+
+The author declares no competing financial interests and received no funding
+for this work. All experiments were run on personal hardware.
+
+An AI coding assistant was used during this project to help implement the
+experimental harness and to draft portions of the manuscript. All experimental
+designs, hypotheses and decision rules were pre-registered before the
+corresponding runs; every reported number derives from a recorded run manifest
+and a replayable execution trace, and the author has verified the results and
+takes full responsibility for the content of this paper.
+
+\section*{Code and Data Availability}
+
+The harness, pre-registrations, run traces and figure-generation scripts are
+available at
+\url{https://github.com/vermayuvraj/self-improving-agent}.
+Every figure and table is regenerated from recorded run artifacts.
+
+\bibliography{references}
+\bibliographystyle{icml2026}
+
+\end{document}
