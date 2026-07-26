@@ -1,18 +1,13 @@
-# Assemble three self-contained LaTeX projects and zip them.
+# Assemble the two ICML Overleaf projects and zip them.
 #
 #   initial/  anonymous, 8-page body limit  -> icml2026-initial-submission.zip
 #   camera/   de-anonymized, 9-page body    -> icml2026-camera-ready.zip
-#   arxiv/    de-anonymized preprint        -> arxiv-preprint.zip
 #
 # Each zip is standalone: paper.tex, body.tex, references.bib, figures/ and the
-# ICML style files, so Overleaf (or arXiv) compiles it with no extra setup.
+# ICML style files, so Overleaf compiles it with no extra setup.
 #
-# arXiv notes:
-#   * icml2026.sty/.bst are NOT in TeX Live, so they must ship with the source.
-#   * Figures are PDF, which is what arXiv requires for pdflatex mode; it does
-#     no on-the-fly conversion.
-#   * Files sit at the archive root, and no .aux/.log/.out/.blg/.pdf artifacts
-#     are ever included — arXiv rejects intermediate files.
+# The arXiv package is built separately by scripts\build_arxiv.ps1, which uses
+# a flat main.tex/main.bbl/refs.bib layout and compiles locally to verify it.
 
 $ErrorActionPreference = "Stop"
 $root   = Split-Path -Parent $PSScriptRoot
@@ -29,7 +24,6 @@ $forbidden = @("*.aux", "*.log", "*.out", "*.blg", "*.toc", "*.synctex.gz", "*.f
 $variants = @{
     "initial" = "icml2026-initial-submission"
     "camera"  = "icml2026-camera-ready"
-    "arxiv"   = "arxiv-preprint"
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -57,7 +51,7 @@ function New-ZipWithPosixPaths {
     }
 }
 
-foreach ($variant in @("initial", "camera", "arxiv")) {
+foreach ($variant in @("initial", "camera")) {
     $dir = Join-Path $sub $variant
     if (-not (Test-Path $dir)) { throw "missing variant dir: $dir" }
 

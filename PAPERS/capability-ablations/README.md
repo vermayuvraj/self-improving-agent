@@ -60,18 +60,38 @@ arXiv comments field until decisions are announced.
 [`submission/ARXIV_METADATA.txt`](submission/ARXIV_METADATA.txt), then upload
 `arxiv-preprint.zip`.
 
-**Packaging conforms to arXiv's rules:** style files ship with the source
-(`icml2026.sty`/`.bst` are not in TeX Live); figures are PDF, since arXiv does
-no on-the-fly conversion in pdflatex mode; no `.aux`/`.log`/`.out`/`.blg`
+### Package layout
+
+Built by `scripts\build_arxiv.ps1`, which **compiles the package locally with
+MiKTeX before zipping it** — so what ships is known to build, not assumed to:
+
+```
+main.tex          single source file (body.tex inlined at build time)
+main.bbl          pre-generated bibliography; arXiv uses it verbatim
+refs.bib          retained for reference
+figures/*.pdf     vector figures
+icml2026.sty      required — see below
+icml2026.bst
+fancyhdr.sty, algorithm.sty, algorithmic.sty
+```
+
+The `.bbl` basename must match the main `.tex` basename, hence
+`main.tex`/`main.bbl`. Shipping a pre-built `.bbl` removes any dependence on
+arXiv's BibTeX run, the most common cause of arXiv build failures.
+
+**The style files are not optional.** `icml2026.sty` is a 2026 conference
+style and is not in TeX Live, which is all arXiv provides. Verified by
+removing it and recompiling: `! LaTeX Error: File 'icml2026.sty' not found.`
+followed by `! Emergency stop.` — no PDF. It must ship with the source.
+
+**Other arXiv rules observed:** figures are PDF, since arXiv performs no
+on-the-fly conversion in pdflatex mode; no `.aux`/`.log`/`.out`/`.blg`/`.pdf`
 artifacts are included; and archive entries use forward slashes, because
 Windows PowerShell's `Compress-Archive` writes backslashes that Linux
 extraction can misread as literal filenames.
 
-**Optional hardening — the `.bbl`.** arXiv will run BibTeX against the shipped
-`references.bib`, which normally works. To remove all doubt, compile the
-preprint once on Overleaf, download `paper.bbl` from *Other logs and files*,
-add it to the zip root, and arXiv will use it directly instead of rebuilding
-the bibliography.
+`submission/arxiv-preview.pdf` is the locally built PDF — check it before
+uploading.
 
 **Known benign warning.** hyperref reports "Token not allowed in a PDF string"
 for the `\\` line break in the title; this affects only the PDF metadata

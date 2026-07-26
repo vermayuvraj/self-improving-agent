@@ -27,3 +27,6 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+PAPERS/capability-ablations/submission/arxiv-package/
+PAPERS/capability-ablations/submission/arxiv-preview.pdf
