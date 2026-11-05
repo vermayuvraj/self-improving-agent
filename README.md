@@ -7,6 +7,8 @@ ultimately improves its own scaffold — with every capability implemented as a
 **toggleable, benchmarkable module** so that its contribution can be measured in
 controlled ablations.
 
+**Preprint:** [Try Again, Don't Look Back: Blind Resampling Outperforms Self-Repair in Small Code Models](https://arxiv.org/abs/2607.26117) · [Results, baseline, and citation](https://www.yuvrajverma.tech/publications/blind-resampling)
+
 ## Research thesis
 
 Minimal agent scaffolds (a bash loop + a strong LLM) already solve ~70% of
